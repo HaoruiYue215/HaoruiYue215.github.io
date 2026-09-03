@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HAORUI YUE — Architecture × Data × AI Product</title>
+<meta name="description" content="岳好睿 · 建筑学 × 地理空间数据科学 × AI 产品经理 个人网站" />
+<link rel="icon" href="data:," />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- ============ LOADER ============ -->
+<div class="loader" id="loader">
+  <div class="loader-lines">
+    <svg viewBox="0 0 200 200" class="loader-blueprint">
+      <rect x="20" y="20" width="160" height="160" class="draw" />
+      <line x1="20" y1="70" x2="180" y2="70" class="draw" />
+      <line x1="20" y1="120" x2="180" y2="120" class="draw" />
+      <line x1="70" y1="20" x2="70" y2="180" class="draw" />
+      <line x1="130" y1="20" x2="130" y2="180" class="draw" />
+    </svg>
+  </div>
+  <div class="loader-count"><span id="loaderNum">0</span>/100</div>
+  <div class="loader-name">HAORUI&nbsp;YUE</div>
+</div>
+
+<!-- ============ CUSTOM CURSOR ============ -->
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- ============ BLUEPRINT GRID BG ============ -->
+<div class="grid-overlay" aria-hidden="true"></div>
+
+<!-- ============ NAV ============ -->
+<header class="nav">
+  <a href="#top" class="nav-logo">HY<span>.</span></a>
+  <nav class="nav-links">
+    <a href="#about" data-hover="ABOUT">关于&nbsp;/&nbsp;ABOUT</a>
+    <a href="#experience" data-hover="WORK">经历&nbsp;/&nbsp;WORK</a>
+    <a href="#projects" data-hover="PROJECTS">项目&nbsp;/&nbsp;PROJECTS</a>
+    <a href="#skills" data-hover="SKILLS">技能&nbsp;/&nbsp;SKILLS</a>
+    <a href="#contact" data-hover="CONTACT">联系&nbsp;/&nbsp;CONTACT</a>
+  </nav>
+  <button class="nav-burger" id="navBurger" aria-label="menu">
+    <span></span><span></span>
+  </button>
+</header>
+
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#about">ABOUT / 关于</a>
+  <a href="#experience">WORK / 经历</a>
+  <a href="#projects">PROJECTS / 项目</a>
+  <a href="#skills">SKILLS / 技能</a>
+  <a href="#contact">CONTACT / 联系</a>
+</div>
+
+<main id="top">
+
+  <!-- ============ HERO ============ -->
+  <section class="hero" id="hero">
+    <canvas id="wireframeCanvas" class="wireframe-canvas"></canvas>
+
+    <div class="hero-inner">
+      <p class="hero-tag reveal-line">建筑学 × 地理空间数据 × AI 产品 — B.Arch / MSc GDS / PM</p>
+      <h1 class="hero-title">
+        <span class="line"><span class="reveal-char">HAORUI</span></span>
+        <span class="line"><span class="reveal-char">YUE</span></span>
+      </h1>
+      <p class="hero-sub reveal-line">岳好睿 · 从图纸到产品，用结构化的方式设计体验。</p>
+      <p class="hero-sub-en reveal-line">Trained as an architect. Building AI products with a designer's eye for structure.</p>
+    </div>
+
+    <div class="scroll-cue">
+      <span>SCROLL</span>
+      <div class="scroll-line"><div class="scroll-dot"></div></div>
+    </div>
+
+    <div class="hero-coords">
+      <span>31.2304° N</span>
+      <span>121.4737° E</span>
+      <span>HONG KONG / SHANGHAI</span>
+    </div>
+  </section>
+
+  <!-- ============ MARQUEE ============ -->
+  <div class="marquee">
+    <div class="marquee-track">
+      <span>PRODUCT MANAGEMENT</span><span class="dot">✦</span>
+      <span>ARCHITECTURE</span><span class="dot">✦</span>
+      <span>GEOSPATIAL DATA</span><span class="dot">✦</span>
+      <span>AI AGENT</span><span class="dot">✦</span>
+      <span>产品设计</span><span class="dot">✦</span>
+      <span>建筑学</span><span class="dot">✦</span>
+      <span>数据科学</span><span class="dot">✦</span>
+      <span>PRODUCT MANAGEMENT</span><span class="dot">✦</span>
+      <span>ARCHITECTURE</span><span class="dot">✦</span>
+      <span>GEOSPATIAL DATA</span><span class="dot">✦</span>
+      <span>AI AGENT</span><span class="dot">✦</span>
+      <span>产品设计</span><span class="dot">✦</span>
+      <span>建筑学</span><span class="dot">✦</span>
+      <span>数据科学</span><span class="dot">✦</span>
+    </div>
+  </div>
+
+  <!-- ============ ABOUT ============ -->
+  <section class="about" id="about">
+    <div class="section-head">
+      <span class="section-num">01</span>
+      <h2 class="section-title">关于我<span class="en">/ ABOUT</span></h2>
+    </div>
+
+    <div class="about-grid">
+      <div class="about-text">
+        <p class="about-lead reveal-up">
+          本科五年建筑学训练，让我习惯从「结构」出发思考问题；
+          现在在香港大学攻读地理空间数据科学，
+          用数据和 AI 重新丈量世界，并把这种严谨带进产品设计。
+        </p>
+        <p class="about-body reveal-up">
+          I spent five years training as an architect — learning to read space,
+          structure and constraints before drawing a single line. Now at the
+          University of Hong Kong, I'm applying that same rigor to geospatial
+          data science and AI product design: blueprint first, build second.
+        </p>
+
+        <div class="edu-list">
+          <div class="edu-item reveal-up">
+            <div class="edu-year">2025 — 2026</div>
+            <div class="edu-body">
+              <h3>香港大学 The University of Hong Kong</h3>
+              <p>地理空间数据科学 MSc in Geospatial Data Science</p>
+            </div>
+          </div>
+          <div class="edu-item reveal-up">
+            <div class="edu-year">2020 — 2025</div>
+            <div class="edu-body">
+              <h3>西安建筑科技大学 Xi'an University of Architecture &amp; Technology</h3>
+              <p>建筑学 Architecture · GPA 3.52 / 5.0</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="about-visual">
+        <svg viewBox="0 0 400 500" class="blueprint-svg" id="blueprintSvg">
+          <!-- Elevation sketch of a minimal tower, architecture line-art -->
+          <g class="bp-group">
+            <rect x="60" y="60" width="280" height="380" class="bp-line thick" />
+            <line x1="60" y1="120" x2="340" y2="120" class="bp-line" />
+            <line x1="60" y1="180" x2="340" y2="180" class="bp-line" />
+            <line x1="60" y1="240" x2="340" y2="240" class="bp-line" />
+            <line x1="60" y1="300" x2="340" y2="300" class="bp-line" />
+            <line x1="60" y1="360" x2="340" y2="360" class="bp-line" />
+            <line x1="140" y1="60" x2="140" y2="440" class="bp-line dashed" />
+            <line x1="220" y1="60" x2="220" y2="440" class="bp-line dashed" />
+            <line x1="300" y1="60" x2="300" y2="440" class="bp-line dashed" />
+            <path d="M60 440 L200 480 L340 440" class="bp-line" />
+            <circle cx="200" cy="20" r="10" class="bp-line" />
+            <line x1="200" y1="30" x2="200" y2="60" class="bp-line" />
+          </g>
+          <text x="60" y="470" class="bp-label">FIG. 01 — ELEVATION / N.T.S.</text>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ EXPERIENCE ============ -->
+  <section class="experience" id="experience">
+    <div class="section-head">
+      <span class="section-num">02</span>
+      <h2 class="section-title">实习经历<span class="en">/ WORK</span></h2>
+    </div>
+
+    <div class="timeline">
+
+      <article class="tl-item reveal-up">
+        <div class="tl-meta">
+          <span class="tl-date">2026.03 — 2026.06</span>
+          <span class="tl-tag">AI Agent Product</span>
+        </div>
+        <div class="tl-body">
+          <h3>360 · 智能体业务部 <span class="tl-role">产品实习生</span></h3>
+          <p class="tl-desc">
+            主导「智能体广场」从 0 到 1 的产品设计与上架链路搭建，覆盖广场页、内容展示、创建配置页三大模块，推动 50 个智能体工作流规范化上架。
+          </p>
+          <ul class="tl-points">
+            <li>搭建「筛选 → 验证 → 打包 → 上架」全链路标准与状态流转逻辑，联动研发落地首批 50 个智能体。</li>
+            <li>重新设计智能体 Chat 页信息展示与对话引导语，新用户首次对话成功率提升 <strong>30%</strong>。</li>
+            <li>定义智能体创建配置页规则与 Skill / MCP 调度策略，支撑 5 类任务场景的智能体创建。</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="tl-item reveal-up">
+        <div class="tl-meta">
+          <span class="tl-date">2025.09 — 2025.12</span>
+          <span class="tl-tag">Mobility Product</span>
+        </div>
+        <div class="tl-body">
+          <h3>货拉拉 · 平台交易部 <span class="tl-role">产品经理</span></h3>
+          <p class="tl-desc">
+            重构下单页预约组件与方舟后台管理系统，让拼车订单不可下即时单，降低司机接单压力，提高订单配对率。
+          </p>
+          <ul class="tl-points">
+            <li>业务调研定位中长途拼车响应率低的核心痛点，主导预约功能改版。</li>
+            <li>独立设计前后台方案，新增城市 / 车型 / 时间多维度策略配置。</li>
+            <li>拼车订单响应率与配对效率提升 <strong>7%</strong>，沉淀可复用 AB 实验迭代机制。</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="tl-item reveal-up">
+        <div class="tl-meta">
+          <span class="tl-date">2025.06 — 2025.08</span>
+          <span class="tl-tag">EdTech · AI Agent</span>
+        </div>
+        <div class="tl-body">
+          <h3>网易有道 · 升学中心部 <span class="tl-role">产品实习生</span></h3>
+          <p class="tl-desc">
+            设计 AI 中文作文批改 Agent（B2C）产品方案与评分体系，结合大模型批改能力与人工规则引擎。
+          </p>
+          <ul class="tl-points">
+            <li>梳理「上传 - 纠错 - AI 批改 - 教师复核 - 报告生成」全流程，产出可落地操作手册。</li>
+            <li>主导设计「一档至五档」分档规则与「基准分 + 加分 + 减分」评分逻辑。</li>
+            <li>作文定档平均准确率达 <strong>91.23%</strong>，总分平均合格率 <strong>87.72%</strong>。</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="tl-item reveal-up">
+        <div class="tl-meta">
+          <span class="tl-date">2024.12 — 2025.03</span>
+          <span class="tl-tag">Social E-commerce</span>
+        </div>
+        <div class="tl-body">
+          <h3>小红书 · 交易部 <span class="tl-role">产品经理</span></h3>
+          <p class="tl-desc">
+            迭代电商直播红包功能，新增「拼手气」抢红包能力，提升主播直播带货效果。
+          </p>
+          <ul class="tl-points">
+            <li>洞察固定金额红包互动性不足的问题，设计主播端红包配置能力。</li>
+            <li>结合用户行为设计红包金额分配策略，降低贫富差距、激励持续看播。</li>
+            <li>观众看播时长提升 <strong>27%</strong>，主播 GMV 提升 <strong>8%</strong>。</li>
+          </ul>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- ============ PROJECTS ============ -->
+  <section class="projects" id="projects">
+    <div class="section-head">
+      <span class="section-num">03</span>
+      <h2 class="section-title">个人项目<span class="en">/ PROJECTS</span></h2>
+    </div>
+
+    <div class="project-card reveal-up">
+      <div class="project-info">
+        <span class="tl-date">2024.02 — 至今</span>
+        <h3>小红书 @苏小白 <span class="tl-role">个人 IP · 内容运营</span></h3>
+        <p class="tl-desc">
+          以美妆新手、淡颜风格爱好者为核心画像的自媒体账号，独立完成内容策划、竞品分析、数据分析与社群运营。
+        </p>
+        <ul class="tl-points">
+          <li>更新笔记 100+，涨粉 3W+，累计获赞与收藏 2.9M。</li>
+          <li>单篇笔记最高观看 30W+，点赞 3W+；平均单篇曝光 6W+。</li>
+          <li>通过数据分析驱动选题优化，活跃粉丝占比 92.4%，优于 95% 同类博主。</li>
+        </ul>
+      </div>
+      <div class="project-stats">
+        <div class="stat">
+          <span class="stat-num" data-count="2.9">0</span>
+          <span class="stat-unit">M</span>
+          <span class="stat-label">获赞与收藏</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num" data-count="30">0</span>
+          <span class="stat-unit">W+</span>
+          <span class="stat-label">最高单篇观看</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num" data-count="92.4">0</span>
+          <span class="stat-unit">%</span>
+          <span class="stat-label">活跃粉丝占比</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SKILLS ============ -->
+  <section class="skills" id="skills">
+    <div class="section-head">
+      <span class="section-num">04</span>
+      <h2 class="section-title">技能<span class="en">/ SKILLS</span></h2>
+    </div>
+
+    <div class="skills-grid">
+      <div class="skill-col reveal-up">
+        <h3>产品能力<span class="en">Product</span></h3>
+        <p>SQL · Python 数据处理与分析</p>
+        <p>Axure · Figma 原型绘制</p>
+      </div>
+      <div class="skill-col reveal-up">
+        <h3>运营能力<span class="en">Growth</span></h3>
+        <p>小红书 · 抖音 · Facebook · TikTok</p>
+        <p>Adobe 系列内容创作工具</p>
+      </div>
+      <div class="skill-col reveal-up">
+        <h3>语言能力<span class="en">Language</span></h3>
+        <p>英语听说读写能力强</p>
+        <p>IELTS 7.0 · 英文授课</p>
+      </div>
+      <div class="skill-col reveal-up">
+        <h3>AI 能力<span class="en">AI Tools</span></h3>
+        <p>Cursor · DeepSeek · Codex</p>
+        <p>Midjourney · Stable Diffusion · Seedance</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CONTACT ============ -->
+  <section class="contact" id="contact">
+    <div class="contact-inner">
+      <span class="section-num">05 / CONTACT</span>
+      <h2 class="contact-title reveal-up">LET'S<br />BUILD<br />SOMETHING.</h2>
+      <p class="contact-sub reveal-up">建筑训练的严谨 + 产品的敏锐，欢迎交流合作。</p>
+
+      <div class="contact-links reveal-up">
+        <a href="mailto:1051989207@qq.com" class="contact-link">
+          <span>Email</span>
+          <span>1051989207@qq.com</span>
+        </a>
+        <a href="tel:+8617392936581" class="contact-link">
+          <span>Phone</span>
+          <span>+86 173 9293 6581</span>
+        </a>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <span>© 2026 HAORUI YUE</span>
+      <span>建筑学 × 数据科学 × AI 产品</span>
+      <a href="#top" class="footer-top">BACK TO TOP ↑</a>
+    </footer>
+  </section>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="js/wireframe.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
