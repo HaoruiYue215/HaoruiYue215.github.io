@@ -35,8 +35,7 @@
   @media print { .sheet { padding: 0; max-width: none; } }
 
   /* ---------- header ---------- */
-  header { display: flex; align-items: flex-start; gap: 10mm; }
-  .identity { flex: 1; text-align: center; }
+  header { text-align: center; }
 
   h1 {
     margin: 0 0 2mm;
@@ -57,14 +56,6 @@
   .contact { margin: 0; font-size: 9.5pt; color: var(--ink); }
   .contact a { color: inherit; text-decoration: none; }
   .contact span { white-space: nowrap; }
-
-  .photo {
-    width: 24mm;
-    height: 32mm;
-    object-fit: cover;
-    border: .3pt solid #ccc;
-    flex: 0 0 auto;
-  }
 
   /* ---------- sections ---------- */
   h2 {
@@ -124,17 +115,14 @@
 <div class="sheet">
 
   <header>
-    <div class="identity">
-      <h1>Haorui Yue</h1>
-      <p class="tagline">AI &amp; Data Product Manager — Agents, Transactions, Content Ecosystems</p>
-      <p class="contact">
-        <span>(+86) 173 9293 6581</span> &nbsp;|&nbsp;
-        <span><a href="mailto:haoruiYue@outlook.com">haoruiYue@outlook.com</a></span> &nbsp;|&nbsp;
-        <span><a href="https://haoruiyue215.github.io">haoruiyue215.github.io</a></span> &nbsp;|&nbsp;
-        <span>Hong Kong SAR</span>
-      </p>
-    </div>
-    <img class="photo" src="assets/photo.jpg" alt="Haorui Yue" />
+    <h1>Haorui Yue</h1>
+    <p class="tagline">AI &amp; Data Product Manager — Agents, Transactions, Content Ecosystems</p>
+    <p class="contact">
+      <span>(+86) 173 9293 6581</span> &nbsp;|&nbsp;
+      <span><a href="mailto:haoruiYue@outlook.com">haoruiYue@outlook.com</a></span> &nbsp;|&nbsp;
+      <span><a href="https://haoruiyue215.github.io">haoruiyue215.github.io</a></span> &nbsp;|&nbsp;
+      <span>Hong Kong SAR</span>
+    </p>
   </header>
 
   <h2>Profile</h2>
