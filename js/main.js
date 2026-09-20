@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
       loader.classList.add('hide');
       playHeroIntro();
+      if (typeof playHeroDrawing === 'function') playHeroDrawing();
       document.body.style.cursor = 'none';
     }, 300);
   }
@@ -92,15 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  /* Blueprint SVG draw-in on scroll */
-  const bpGroup = document.querySelector('.bp-group');
-  if (bpGroup) {
-    ScrollTrigger.create({
-      trigger: '.about-visual',
-      start: 'top 75%',
-      onEnter: () => bpGroup.classList.add('in-view'),
-    });
-  }
+  /* About drawing is armed in drawings.js */
 
   /* Timeline items stagger line-draw (top border reveal) */
   gsap.utils.toArray('.tl-item').forEach((item, i) => {
