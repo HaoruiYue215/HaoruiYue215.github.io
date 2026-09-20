@@ -41,7 +41,7 @@
   <nav class="nav-links">
     <a href="#about" data-hover="ABOUT">关于&nbsp;/&nbsp;ABOUT</a>
     <a href="#experience" data-hover="WORK">经历&nbsp;/&nbsp;WORK</a>
-    <a href="#projects" data-hover="PROJECTS">项目&nbsp;/&nbsp;PROJECTS</a>
+    <a href="#projects" data-hover="WORKS">作品集&nbsp;/&nbsp;WORKS</a>
     <a href="#skills" data-hover="SKILLS">技能&nbsp;/&nbsp;SKILLS</a>
     <a href="#contact" data-hover="CONTACT">联系&nbsp;/&nbsp;CONTACT</a>
   </nav>
@@ -53,7 +53,7 @@
 <div class="mobile-menu" id="mobileMenu">
   <a href="#about">ABOUT / 关于</a>
   <a href="#experience">WORK / 经历</a>
-  <a href="#projects">PROJECTS / 项目</a>
+  <a href="#projects">WORKS / 作品集</a>
   <a href="#skills">SKILLS / 技能</a>
   <a href="#contact">CONTACT / 联系</a>
 </div>
@@ -287,11 +287,57 @@
     </div>
   </section>
 
-  <!-- ============ PROJECTS ============ -->
-  <section class="projects" id="projects">
-    <div class="section-head">
-      <span class="section-num">03</span>
-      <h2 class="section-title">个人项目<span class="en">/ PROJECTS</span></h2>
+  <!-- ============ WORKS / HIGHLIGHTS ============ -->
+  <section class="works" id="projects">
+    <div class="works-head">
+      <p class="works-kicker">Selected Works 2023-2024</p>
+      <h2 class="works-title">See the highlights<br>of this work.</h2>
+    </div>
+
+    <div class="works-grid">
+      <button type="button" class="work-card reveal-up" data-work="grid">
+        <figure class="work-figure">
+          <img src="assets/works/p08.jpg" alt="Reinterpreting the Grid community axon" width="2550" height="1650">
+          <figcaption class="work-hover">
+            <small>PROJECT</small>
+            <h3>Reinterpreting the Grid</h3>
+          </figcaption>
+        </figure>
+        <p class="work-desc">用四合院单元的聚合逻辑，生成可生长的社区布局。</p>
+      </button>
+
+      <button type="button" class="work-card reveal-up" data-work="massing">
+        <figure class="work-figure">
+          <img src="assets/works/p09.jpg" alt="Massing Production 3D sketchbook on tablet" width="2550" height="1650">
+          <figcaption class="work-hover">
+            <small>PROJECT</small>
+            <h3>Massing Production</h3>
+          </figcaption>
+        </figure>
+        <p class="work-desc">手绘平面即时变成三维体量，并能用 AR 叠到实体模型上。</p>
+      </button>
+
+      <button type="button" class="work-card reveal-up" data-work="press">
+        <figure class="work-figure">
+          <img src="assets/works/p14.jpg" alt="Press Here tactile book for visually impaired children" width="2550" height="1650">
+          <figcaption class="work-hover">
+            <small>PROJECT</small>
+            <h3>Press Here</h3>
+          </figcaption>
+        </figure>
+        <p class="work-desc">给视障儿童的触觉书：触摸、声音和盲文在同一张卡片里。</p>
+      </button>
+
+      <button type="button" class="work-card reveal-up" data-work="bodyblock">
+        <figure class="work-figure">
+          <img src="assets/works/p19.jpg" alt="Bodyblock AR application for ADHD" width="2550" height="1650">
+          <figcaption class="work-hover">
+            <small>PROJECT</small>
+            <h3>Bodyblock</h3>
+          </figcaption>
+        </figure>
+        <p class="work-desc">面向 ADHD 的 AR 应用，把身体运动和空间感知连在一起。</p>
+      </button>
     </div>
 
     <div class="project-card reveal-up">
@@ -386,9 +432,30 @@
 
 </main>
 
+<div class="work-viewer" id="workViewer" hidden>
+  <div class="work-viewer-bar">
+    <div class="work-viewer-who">
+      <span id="viewerIndex">01 / 04</span>
+      <div>
+        <p id="viewerKicker">PROJECT</p>
+        <h3 id="viewerTitle"></h3>
+        <p id="viewerMeta"></p>
+      </div>
+    </div>
+    <div class="work-viewer-tools">
+      <button type="button" class="work-nav-btn" id="viewerPrev" aria-label="Previous project">Prev</button>
+      <button type="button" class="work-nav-btn" id="viewerNext" aria-label="Next project">Next</button>
+      <button type="button" class="work-close" id="viewerClose" aria-label="Close">Close</button>
+    </div>
+  </div>
+  <p class="work-viewer-desc" id="viewerDesc"></p>
+  <div class="work-viewer-pages" id="viewerPages"></div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
 <script src="js/drawings.js"></script>
+<script src="js/works.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

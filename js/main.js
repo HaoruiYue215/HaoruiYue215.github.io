@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   raf();
 
-  document.querySelectorAll('a, button, .skill-col, .project-card').forEach((el) => {
+  document.querySelectorAll('a, button, .skill-col, .project-card, .work-card').forEach((el) => {
     el.addEventListener('mouseenter', () => ring.classList.add('big'));
     el.addEventListener('mouseleave', () => ring.classList.remove('big'));
   });
