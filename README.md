@@ -1,20 +1,29 @@
-# 岳好睿 / Haorui Yue
+# HAORUI YUE — Personal Site
 
-个人网站。建筑学出身，香港大学地理空间数据科学，AI 产品经理。
+个人网站 · Architecture × Geospatial Data × AI Product
 
-线上地址：https://haoruiyue215.github.io/
+黑白极简风格，灵感来自 [Vaulk](https://vaulk.com)：3D 线框建筑动画、建筑蓝图线稿插图、自定义光标、滚动动效。纯静态 HTML/CSS/JS，无需构建，托管于 GitHub Pages。
 
-## 本地预览
+Live: https://haoruiyue215.github.io/
 
-```bash
-npm install
-npm run dev
+## Tech
+
+- Vanilla HTML / CSS / JS
+- [GSAP](https://gsap.com) + ScrollTrigger — 滚动动效
+- [Three.js](https://threejs.org) — 首页 3D 线框建筑
+- GitHub Pages — 部署
+
+## Structure
+
+```
+index.html
+css/style.css
+js/main.js        # loader, cursor, scroll reveal, counters
+js/wireframe.js   # three.js wireframe tower
 ```
 
-## 构建
+## Local preview
 
 ```bash
-npm run build
+python3 -m http.server 8080
 ```
-
-静态文件输出到 `out/`。GitHub Pages 由 Actions 在推送到 `main` 后自动发布。
