@@ -3,7 +3,8 @@
    （Step 2 流程 / Step 4 内容安全与占用控制加固）
    待机 → 拍摄须知(明确同意才开镜头) → 拍照(倒计时/重拍) → 选人格
         → 选风格 → 留一句话(分类安全校验) → 上传临时图床
-        → Pollinations 图生图 → Canvas 合成 → 揭晓
+        → Pollinations 生成（图生图可用时直接含本人；匿名文生图时
+          由 poster.js 把自拍合成进海报）→ Canvas 合成 → 揭晓
    每一步通过 SoundprintSync 发布状态，供大屏消费。
 
    占用控制（常量与大屏 wall.js 的 STALE 看门狗对齐）：
@@ -594,15 +595,20 @@
       });
   }
 
-  /* ---------- 生成：Pollinations 图生图 ----------
-     三级链路，全部真实请求，失败才报错，绝不用预设假图：
-     1) kontext 直连 —— 真正保留五官身份的 img2img。
-        注意：上游已把 kontext 匿名访问迁到 enter.pollinations.ai（需 Key），
-        匿名调用稳定 500，属预期，会自动落到下一级；
-     2) 匿名默认模型直连 —— 仍带 image 参数做图生图（保脸度取决于上游），
-        匿名层限流明显（402/5xx 随机出现），需要耐心重试；
-     3) 默认模型经 images.weserv.nl 图片代理 —— 本地 localhost:端口 演示时
-        浏览器 Origin 会被上游 403，代理服务端取图可绕过，且回包带 CORS 头。 */
+  /* ---------- 生成：Pollinations ----------
+     三级链路，全部真实请求，失败才报错，绝不用预设假图。
+     2026-10 实测上游现状：
+     - 匿名层只剩 sana（DreamShaper 8 LCM，纯文生图）：/models 仅返回
+       ["sana"]，传任何其它 model 都被静默降级成 sana，且 image 参数
+       被完全无视（实测：68% 红色测试图输入，输出红色占比 0%）；
+     - kontext / gpt-image / flux-klein 等图生图模型全部迁到
+       gen.pollinations.ai 新网关，匿名一律 401（需 enter.pollinations.ai
+       注册 Key）；kontext 在旧端点直连稳定 500。
+     结论：匿名做不到真图生图。链路仍把 kontext 放第一位试 1 次
+     （部署环境若配了 Key/referrer 提权即可用，匿名 0.5s 内快速失败）；
+     其余层级产出的是「音乐节氛围场景」，由 poster.js 把自拍本体合成
+     进海报（照片驱动合成），绝不拿与用户无关的图冒充图生图。
+     返回 { img, img2img }：img2img=true 表示 AI 成片已含本人。 */
   function fetchImageOnce(url) {
     var controller = new AbortController();
     var timer = setTimeout(function () { controller.abort(); }, GENERATE_TIMEOUT);
@@ -633,6 +639,28 @@
     });
   }
 
+  function decodeImageBlob(blob) {
+    return new Promise(function (resolve, reject) {
+      var objUrl = URL.createObjectURL(blob);
+      var img = new Image();
+      img.onload = function () { resolve(img); };
+      img.onerror = function () {
+        URL.revokeObjectURL(objUrl);
+        reject(new Error("生成的图片无法解码"));
+      };
+      img.src = objUrl;
+    });
+  }
+
+  function loadPhotoImage(dataURL) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      img.onload = function () { resolve(img); };
+      img.onerror = function () { reject(new Error("自拍解码失败")); };
+      img.src = dataURL;
+    });
+  }
+
   function generateImage(imageUrl) {
     var prompt = Poster.buildPrompt({
       persona: state.persona,
@@ -651,20 +679,29 @@
         encodeURIComponent("image.pollinations.ai" + path + "&_r=" + Math.random().toString(36).slice(2));
     };
 
-    return withRetry(function () { return fetchImageOnce(direct + "&model=kontext"); }, 2, 4000)
-      .catch(function () { return withRetry(function () { return fetchImageOnce(direct); }, 3, 4000); })
-      .catch(function () { return withRetry(function () { return fetchImageOnce(proxied()); }, 3, 5000); })
+    // L1 kontext：唯一可能保留身份的图生图。匿名被上游确定性拒绝
+    // （500，约 0.5s），只试 1 次，不做无谓的退避重试
+    var tryKontext = function () { return fetchImageOnce(direct + "&model=kontext"); };
+    // L2 匿名默认模型直连（当前 = sana，纯文生图，image 参数被无视）
+    var tryDirect = function () { return fetchImageOnce(direct); };
+    // L3 默认模型经 images.weserv.nl 图片代理 —— 本地 localhost:端口
+    // 演示时浏览器 Origin 会被上游 403，代理服务端取图可绕过，且回包带 CORS 头
+    var tryProxied = function () { return fetchImageOnce(proxied()); };
+
+    return withRetry(tryKontext, 1, 0)
       .then(function (blob) {
-        return new Promise(function (resolve, reject) {
-          var objUrl = URL.createObjectURL(blob);
-          var img = new Image();
-          img.onload = function () { resolve(img); };
-          img.onerror = function () {
-            URL.revokeObjectURL(objUrl);
-            reject(new Error("生成的图片无法解码"));
-          };
-          img.src = objUrl;
+        return decodeImageBlob(blob).then(function (img) {
+          return { img: img, img2img: true };
         });
+      })
+      .catch(function () {
+        return withRetry(tryDirect, 3, 4000)
+          .catch(function () { return withRetry(tryProxied, 3, 5000); })
+          .then(function (blob) {
+            return decodeImageBlob(blob).then(function (img) {
+              return { img: img, img2img: false };
+            });
+          });
       });
   }
 
@@ -728,11 +765,11 @@
         setPhase("generate");
         return generateImage(url);
       })
-      .then(function (img) {
+      .then(function (result) {
         setPhase("compose");
-        return document.fonts.ready.then(function () { return img; });
+        return document.fonts.ready.then(function () { return result; });
       })
-      .then(function (img) {
+      .then(function (result) {
         state.serial = Poster.randomSerial();
         var title = Poster.titleFor(state.persona, state.style);
         // 分享页地址：相对当前页面解析，换任意静态托管路径都成立
@@ -740,16 +777,28 @@
           "share.html?id=" + encodeURIComponent(state.serial),
           location.href
         ).href;
-        state.posterCanvas = Poster.composePoster({
-          image: img,
-          persona: state.persona,
-          style: state.style,
-          title: title,
-          nickname: state.nickname,
-          line: state.line,
-          serial: state.serial,
-          shareUrl: state.shareUrl
+        // 图生图可用时 AI 成片已含本人；否则把自拍本体合成进海报，
+        // 让海报真正由照片驱动（匿名文生图层的诚实兜底）。
+        // 自拍解码失败时退化为纯 AI 场景合成，不让整场生成失败
+        var photoReady = result.img2img
+          ? Promise.resolve(null)
+          : loadPhotoImage(state.photoDataURL).catch(function () { return null; });
+        return photoReady.then(function (photoImg) {
+          state.posterCanvas = Poster.composePoster({
+            image: result.img,
+            photo: photoImg,
+            persona: state.persona,
+            style: state.style,
+            title: title,
+            nickname: state.nickname,
+            line: state.line,
+            serial: state.serial,
+            shareUrl: state.shareUrl
+          });
+          return title;
         });
+      })
+      .then(function (title) {
         // 下载用 PNG；同步给大屏用 JPEG（控制 localStorage 体积）
         state.posterDataURL = state.posterCanvas.toDataURL("image/png");
         state.generating = false;

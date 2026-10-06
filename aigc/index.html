@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/kiosk.css?v=3" />
+  <link rel="stylesheet" href="css/kiosk.css?v=4" />
 </head>
 <body>
   <!--
@@ -263,14 +263,14 @@
     <!-- ============ 6. 生成中 ============ -->
     <section class="screen" id="scr-drawing" data-step="drawing">
       <div class="drawing-wrap">
-        <p class="step-tag"><span>05</span> 图生图 · IMG2IMG</p>
+        <p class="step-tag"><span>05</span> 生成 · GENERATE</p>
         <h2 class="drawing-title">正在绘制 <em id="drawing-nickname">你</em> 的声纹</h2>
         <div class="wave" aria-hidden="true">
           <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
         </div>
         <ol class="draw-steps" id="draw-steps">
           <li data-phase="upload">上传自拍到临时图床<span class="st"></span></li>
-          <li data-phase="generate">AI 图生图绘制中（约 15–60 秒）<span class="st"></span></li>
+          <li data-phase="generate">AI 绘制音乐节场景（约 15–60 秒）<span class="st"></span></li>
           <li data-phase="compose">合成品牌海报<span class="st"></span></li>
         </ol>
         <div class="draw-error" id="draw-error" hidden>
@@ -323,11 +323,11 @@
   <!-- 轻提示（超时释放等） -->
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="js/vendor/qrcode.js?v=3"></script>
-  <script src="js/sync.js?v=3"></script>
-  <script src="js/safety.js?v=3"></script>
-  <script src="js/store.js?v=3"></script>
-  <script src="js/poster.js?v=3"></script>
-  <script src="js/kiosk.js?v=3"></script>
+  <script src="js/vendor/qrcode.js?v=4"></script>
+  <script src="js/sync.js?v=4"></script>
+  <script src="js/safety.js?v=4"></script>
+  <script src="js/store.js?v=4"></script>
+  <script src="js/poster.js?v=4"></script>
+  <script src="js/kiosk.js?v=4"></script>
 </body>
 </html>

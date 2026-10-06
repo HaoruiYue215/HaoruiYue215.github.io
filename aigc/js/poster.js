@@ -49,12 +49,16 @@ window.SoundprintPoster = (function () {
   }
 
   /* ============================================================
-     品牌沙盒提示词模板（安全四层之 L3 · 生成约束，定稿 v2）
+     品牌沙盒提示词模板（安全四层之 L3 · 生成约束，定稿 v3）
      ------------------------------------------------------------
-     固定骨架：
-       keep the same face and identity, festival concert poster,
-       {style.prompt}, {persona.en} music atmosphere,
-       wearing SOUNDPRINT {persona.skuEn} headphones,
+     固定骨架（编辑指令式：明确告诉图生图模型这是「改这张图」，
+     不是「画个新场景」——匿名层只剩纯文生图模型时会退化为氛围场景，
+     但 kontext 等图生图模型可用时，这版提示词的身份保留显著更强）：
+       edit this exact photo of the person, keep their face, pose,
+       clothing and identity unchanged, transform only the style,
+       background and lighting into a {style.prompt} {persona.en}
+       music festival poster, they are wearing SOUNDPRINT
+       {persona.skuEn} headphones,
        mood from "{line}" | euphoric festival mood
      负面约束（追加在末尾，挡输出越界）：
        no nudity, no suggestive content,        —— 色情
@@ -79,9 +83,11 @@ window.SoundprintPoster = (function () {
     var line = (opts.line || "").replace(/["\n\r]/g, " ").slice(0, 60);
     var mood = line ? 'mood from "' + line + '"' : "euphoric festival mood";
     return (
-      "keep the same face and identity, festival concert poster, " +
-      s.prompt + ", " + p.en + " music atmosphere, wearing SOUNDPRINT " +
-      p.skuEn + " headphones, " + mood + ", " + NEGATIVE
+      "edit this exact photo of the person, keep their face, pose, clothing " +
+      "and identity unchanged, transform only the style, background and " +
+      "lighting into a " + s.prompt + " " + p.en + " music festival poster, " +
+      "they are wearing SOUNDPRINT " + p.skuEn + " headphones, " +
+      mood + ", " + NEGATIVE
     );
   }
 
@@ -93,6 +99,122 @@ window.SoundprintPoster = (function () {
     var dw = iw * scale;
     var dh = ih * scale;
     ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
+  }
+
+  /* ============================================================
+     照片驱动合成（composePoster 传入 opts.photo 时启用）
+     ------------------------------------------------------------
+     上游现状（2026-10 实测）：Pollinations 匿名层只剩 sana
+     （DreamShaper 8 LCM，纯文生图，无视 image 参数）；kontext 等
+     全部图生图模型已迁到 enter.pollinations.ai，匿名 401/500。
+     因此当 AI 成片里并不包含用户本人时，绝不把它冒充「图生图」——
+     改为把自拍本体合成进海报：
+       1) 照片 cover 铺满打底（身份 100% 保真：就是本人照片）
+       2) 按所选风格做像素级调色（胶片 / 霓虹 / 酸性 / 水墨）
+       3) AI 场景以 screen 混合叠入：亮部（灯光 / 激光 / 霓虹）
+          浮到照片上，暗部自然消失 —— AI 负责音乐节氛围
+       4) 颗粒统一两层质感
+     ============================================================ */
+
+  /* 像素级风格调色：只动照片层，让自拍贴合所选画面气质 */
+  function applyStyleGrade(ctx, styleKey, w, h) {
+    var id = ctx.getImageData(0, 0, w, h);
+    var d = id.data;
+    var i, r, g, b, lum;
+    if (styleKey === "film") {
+      // 胶片：抬黑场、暖高光、轻微降饱和
+      for (i = 0; i < d.length; i += 4) {
+        r = d[i]; g = d[i + 1]; b = d[i + 2];
+        lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        d[i]     = Math.min(255, r * 0.90 + lum * 0.06 + 22);
+        d[i + 1] = Math.min(255, g * 0.88 + lum * 0.06 + 15);
+        d[i + 2] = Math.min(255, b * 0.86 + lum * 0.06 + 8);
+      }
+    } else if (styleKey === "neon") {
+      // 赛博霓虹：压绿、抬蓝品红，暗部偏冷
+      for (i = 0; i < d.length; i += 4) {
+        r = d[i]; g = d[i + 1]; b = d[i + 2];
+        d[i]     = Math.min(255, r * 0.98 + 14);
+        d[i + 1] = g * 0.86;
+        d[i + 2] = Math.min(255, b * 1.10 + 20);
+      }
+    } else if (styleKey === "acid") {
+      // 酸性海报：5 档色调分离 + 饱和度拉高
+      for (i = 0; i < d.length; i += 4) {
+        r = d[i]; g = d[i + 1]; b = d[i + 2];
+        r = Math.round(r / 255 * 4) / 4 * 255;
+        g = Math.round(g / 255 * 4) / 4 * 255;
+        b = Math.round(b / 255 * 4) / 4 * 255;
+        lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        d[i]     = Math.max(0, Math.min(255, lum + (r - lum) * 1.55));
+        d[i + 1] = Math.max(0, Math.min(255, lum + (g - lum) * 1.55));
+        d[i + 2] = Math.max(0, Math.min(255, lum + (b - lum) * 1.55));
+      }
+    } else {
+      // 水墨梦核：去色 72%、软对比、微冷宣纸底
+      for (i = 0; i < d.length; i += 4) {
+        r = d[i]; g = d[i + 1]; b = d[i + 2];
+        lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        lum = lum + (lum - 128) * 0.18; // 软 S 曲线
+        d[i]     = Math.max(0, Math.min(255, r * 0.28 + lum * 0.72));
+        d[i + 1] = Math.max(0, Math.min(255, g * 0.28 + lum * 0.72));
+        d[i + 2] = Math.max(0, Math.min(255, b * 0.28 + lum * 0.72 + 6));
+      }
+    }
+    ctx.putImageData(id, 0, 0);
+  }
+
+  /* 胶片颗粒：128×128 中性灰噪点 tile，overlay 低透明度平铺 */
+  var grainTile = null;
+  function addGrain(ctx, w, h, alpha) {
+    if (!grainTile) {
+      grainTile = document.createElement("canvas");
+      grainTile.width = grainTile.height = 128;
+      var tc = grainTile.getContext("2d");
+      var id = tc.createImageData(128, 128);
+      for (var i = 0; i < id.data.length; i += 4) {
+        var v = 108 + Math.floor(Math.random() * 40); // 中性灰附近抖动
+        id.data[i] = id.data[i + 1] = id.data[i + 2] = v;
+        id.data[i + 3] = 255;
+      }
+      tc.putImageData(id, 0, 0);
+    }
+    ctx.save();
+    ctx.globalCompositeOperation = "overlay";
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = ctx.createPattern(grainTile, "repeat");
+    ctx.fillRect(0, 0, w, h);
+    ctx.restore();
+  }
+
+  /* AI 氛围层叠入强度：霓虹场景暗部多亮部少，screen 最出效果 */
+  var GRADE = {
+    film: { scene: 0.40, grain: 0.22, dim: 0.16 },
+    neon: { scene: 0.55, grain: 0.14, dim: 0.20 },
+    acid: { scene: 0.42, grain: 0.16, dim: 0.12 },
+    ink:  { scene: 0.32, grain: 0.18, dim: 0.10 }
+  };
+
+  /**
+   * 照片驱动合成：自拍打底 + 风格调色 + AI 场景 screen 叠入 + 颗粒。
+   * @param {CanvasRenderingContext2D} ctx 已铺黑底的目标画布
+   * @param {HTMLImageElement} photo 用户自拍（已加载）
+   * @param {HTMLImageElement} scene AI 生成的音乐节场景
+   * @param {string} styleKey 风格 key
+   */
+  function composeDrivenByPhoto(ctx, photo, scene, styleKey) {
+    var g = GRADE[styleKey] || GRADE.film;
+    drawCover(ctx, photo, W, H);
+    applyStyleGrade(ctx, styleKey, W, H);
+    // 轻微压暗照片层，让 screen 叠入的灯光读得出来
+    ctx.fillStyle = "rgba(10,10,10," + g.dim + ")";
+    ctx.fillRect(0, 0, W, H);
+    ctx.save();
+    ctx.globalCompositeOperation = "screen";
+    ctx.globalAlpha = g.scene;
+    drawCover(ctx, scene, W, H);
+    ctx.restore();
+    addGrain(ctx, W, H, g.grain);
   }
 
   /* 覆盖层语言：纯黑 / 白 / 灰，发丝线，等宽编号 —— 不用彩色渐变 */
@@ -160,6 +282,9 @@ window.SoundprintPoster = (function () {
    * 合成最终海报。
    * @param {object} opts
    *   image    {HTMLImageElement} AI 成片（已加载）
+   *   photo    {HTMLImageElement} 可选：用户自拍（已加载）。传入即启用
+   *            照片驱动合成 —— 用于 AI 成片不含本人时（匿名文生图层），
+   *            让海报真正由照片驱动；图生图可用时不传，AI 成片即含本人
    *   persona  {string} 人格 key
    *   style    {string} 风格 key
    *   title    {string} 称号
@@ -177,10 +302,14 @@ window.SoundprintPoster = (function () {
     canvas.height = H;
     var ctx = canvas.getContext("2d");
 
-    // 底：AI 成片
+    // 底：AI 成片；传入自拍时改为照片驱动合成（见 composeDrivenByPhoto 注释）
     ctx.fillStyle = "#0a0a0a";
     ctx.fillRect(0, 0, W, H);
-    drawCover(ctx, opts.image, W, H);
+    if (opts.photo) {
+      composeDrivenByPhoto(ctx, opts.photo, opts.image, opts.style);
+    } else {
+      drawCover(ctx, opts.image, W, H);
+    }
 
     // 顶部压暗（品牌区，功能性可读性压暗）
     var top = ctx.createLinearGradient(0, 0, 0, 260);
