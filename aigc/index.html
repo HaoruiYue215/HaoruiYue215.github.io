@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>声纹 SOUNDPRINT · 拍照工位</title>
   <meta name="description" content="声纹 SOUNDPRINT 音乐节 AIGC 海报工位：拍一张，选曲风人格与视觉风格，留一句话，AI 把你画进音乐节海报。" />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2307070c'/%3E%3Crect x='6' y='12' width='3.4' height='9' rx='1.7' fill='%236ef3ff'/%3E%3Crect x='11.5' y='7' width='3.4' height='18' rx='1.7' fill='%23b78cff'/%3E%3Crect x='17' y='10' width='3.4' height='13' rx='1.7' fill='%23ff6ec7'/%3E%3Crect x='22.5' y='14' width='3.4' height='6' rx='1.7' fill='%236ef3ff'/%3E%3C/svg%3E" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230a0a0a'/%3E%3Crect x='6' y='12' width='3' height='9' fill='%23f2f2f2'/%3E%3Crect x='11.5' y='7' width='3' height='18' fill='%23f2f2f2'/%3E%3Crect x='17' y='10' width='3' height='13' fill='%23f2f2f2'/%3E%3Crect x='22.5' y='14' width='3' height='6' fill='%23f2f2f2'/%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/kiosk.css" />
 </head>
 <body>
@@ -122,22 +122,26 @@
         <p class="step-tag"><span>02</span> 选曲风人格 · GENRE</p>
         <h2 class="pick-title">你的音乐人格是？</h2>
         <div class="pick-grid" id="persona-grid">
-          <button class="pick-card" type="button" data-persona="pop" style="--accent:#f0b95c">
+          <button class="pick-card" type="button" data-persona="pop">
+            <span class="pc-no">01</span>
             <span class="pc-cn">流行</span>
             <span class="pc-en">POP</span>
             <span class="pc-sku">对应机型 · 暖金单元款</span>
           </button>
-          <button class="pick-card" type="button" data-persona="electronic" style="--accent:#6ef3ff">
+          <button class="pick-card" type="button" data-persona="electronic">
+            <span class="pc-no">02</span>
             <span class="pc-cn">电子</span>
             <span class="pc-en">ELECTRONIC</span>
             <span class="pc-sku">对应机型 · 霓虹低频款</span>
           </button>
-          <button class="pick-card" type="button" data-persona="rock" style="--accent:#ff6ec7">
+          <button class="pick-card" type="button" data-persona="rock">
+            <span class="pc-no">03</span>
             <span class="pc-cn">摇滚</span>
             <span class="pc-en">ROCK</span>
             <span class="pc-sku">对应机型 · 现场失真款</span>
           </button>
-          <button class="pick-card" type="button" data-persona="folk" style="--accent:#9fb8ff">
+          <button class="pick-card" type="button" data-persona="folk">
+            <span class="pc-no">04</span>
             <span class="pc-cn">民谣</span>
             <span class="pc-en">FOLK</span>
             <span class="pc-sku">对应机型 · 人声突出款</span>
@@ -155,22 +159,26 @@
         <p class="step-tag"><span>03</span> 选视觉风格 · STYLE</p>
         <h2 class="pick-title">画面气质选一种</h2>
         <div class="pick-grid" id="style-grid">
-          <button class="pick-card" type="button" data-style="film" style="--accent:#e0a458">
+          <button class="pick-card" type="button" data-style="film">
+            <span class="pc-no">01</span>
             <span class="pc-cn">胶片噪点</span>
             <span class="pc-en">FILM GRAIN</span>
             <span class="pc-sku"> analog 颗粒 · 暖色漏光</span>
           </button>
-          <button class="pick-card" type="button" data-style="neon" style="--accent:#6ef3ff">
+          <button class="pick-card" type="button" data-style="neon">
+            <span class="pc-no">02</span>
             <span class="pc-cn">赛博霓虹</span>
             <span class="pc-en">CYBER NEON</span>
             <span class="pc-sku">霓虹灯管 · 雨夜反光</span>
           </button>
-          <button class="pick-card" type="button" data-style="acid" style="--accent:#c8f542">
+          <button class="pick-card" type="button" data-style="acid">
+            <span class="pc-no">03</span>
             <span class="pc-cn">酸性海报</span>
             <span class="pc-en">ACID POSTER</span>
             <span class="pc-sku">高饱和 · 金属液态</span>
           </button>
-          <button class="pick-card" type="button" data-style="ink" style="--accent:#9fb8ff">
+          <button class="pick-card" type="button" data-style="ink">
+            <span class="pc-no">04</span>
             <span class="pc-cn">水墨梦核</span>
             <span class="pc-en">INK DREAMCORE</span>
             <span class="pc-sku">宣纸晕染 · 梦境留白</span>

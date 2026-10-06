@@ -5,26 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>声纹 SOUNDPRINT · 扫码带走</title>
   <meta name="description" content="声纹 SOUNDPRINT 音乐节 AIGC 海报工位分享页：保存你的声纹海报，看看品牌还能怎么玩。" />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2307070c'/%3E%3Crect x='6' y='12' width='3.4' height='9' rx='1.7' fill='%236ef3ff'/%3E%3Crect x='11.5' y='7' width='3.4' height='18' rx='1.7' fill='%23b78cff'/%3E%3Crect x='17' y='10' width='3.4' height='13' rx='1.7' fill='%23ff6ec7'/%3E%3Crect x='22.5' y='14' width='3.4' height='6' rx='1.7' fill='%236ef3ff'/%3E%3C/svg%3E" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230a0a0a'/%3E%3Crect x='6' y='12' width='3' height='9' fill='%23f2f2f2'/%3E%3Crect x='11.5' y='7' width='3' height='18' fill='%23f2f2f2'/%3E%3Crect x='17' y='10' width='3' height='13' fill='%23f2f2f2'/%3E%3Crect x='22.5' y='14' width='3' height='6' fill='%23f2f2f2'/%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet" />
   <style>
-    /* 声纹 SOUNDPRINT · 分享落地页（Step 3）：手机优先，扫码即达 */
+    /* 声纹 SOUNDPRINT · 分享落地页（Step 3）：手机优先，扫码即达
+       Berlin techno minimalism：纯黑 / 白 / 单灰阶，发丝线，方角，等宽编号 */
     :root {
-      --bg: #07070c;
-      --panel: rgba(255, 255, 255, 0.028);
-      --panel-2: rgba(255, 255, 255, 0.05);
-      --line: rgba(255, 255, 255, 0.09);
-      --line-2: rgba(255, 255, 255, 0.16);
-      --ink: #f4f4f8;
-      --dim: #a4a4ba;
-      --faint: #6d6d85;
-      --b1: #6ef3ff;
-      --b2: #b78cff;
-      --b3: #ff6ec7;
-      --grad: linear-gradient(100deg, var(--b1), var(--b2) 52%, var(--b3));
+      --bg: #0a0a0a;
+      --panel: #0d0d0d;
+      --line: #232323;
+      --line-2: #3d3d3d;
+      --ink: #f2f2f2;
+      --dim: #8a8a8a;
+      --faint: #555555;
       --font-d: "Space Grotesk", "Noto Sans SC", system-ui, sans-serif;
+      --font-m: "IBM Plex Mono", "Space Grotesk", ui-monospace, monospace;
       --font-b: "Noto Sans SC", "Space Grotesk", system-ui, sans-serif;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -37,16 +34,7 @@
       -webkit-font-smoothing: antialiased;
       min-height: 100vh;
     }
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      z-index: -1;
-      background:
-        radial-gradient(80vw 60vw at 10% -10%, rgba(110, 243, 255, 0.1), transparent 62%),
-        radial-gradient(70vw 60vw at 100% 30%, rgba(255, 110, 199, 0.07), transparent 60%),
-        radial-gradient(90vw 70vw at 50% 115%, rgba(183, 140, 255, 0.09), transparent 62%);
-    }
+    ::selection { background: var(--ink); color: var(--bg); }
     .wrap { max-width: 520px; margin: 0 auto; padding: 20px 18px 56px; }
 
     .topbar {
@@ -54,6 +42,8 @@
       align-items: center;
       justify-content: space-between;
       padding: 6px 2px 18px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 18px;
     }
     .brand { display: inline-flex; align-items: center; gap: 9px; font-weight: 900; letter-spacing: 0.05em; }
     .brand em {
@@ -62,83 +52,75 @@
       font-weight: 700;
       font-size: 11px;
       letter-spacing: 0.22em;
-      background: var(--grad);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
+      color: var(--ink);
     }
     .brand-mark { display: inline-flex; align-items: flex-end; gap: 2.5px; height: 18px; }
-    .brand-mark i { width: 3px; border-radius: 1.5px; background: var(--grad); }
+    .brand-mark i { width: 3px; background: var(--ink); }
     .brand-mark i:nth-child(1) { height: 45%; }
     .brand-mark i:nth-child(2) { height: 90%; }
     .brand-mark i:nth-child(3) { height: 62%; }
     .brand-mark i:nth-child(4) { height: 100%; }
     .brand-mark i:nth-child(5) { height: 52%; }
     .tag {
-      font-family: var(--font-d);
+      font-family: var(--font-m);
       font-size: 10px;
-      letter-spacing: 0.2em;
-      color: var(--faint);
-      border: 1px solid var(--line);
-      border-radius: 999px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--dim);
+      border: 1px solid var(--line-2);
       padding: 4px 10px;
     }
 
     .poster-card {
       border: 1px solid var(--line-2);
-      border-radius: 20px;
       overflow: hidden;
       background: var(--panel);
-      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5), 0 0 90px rgba(183, 140, 255, 0.12);
     }
     .poster-card img { display: block; width: 100%; }
 
-    .meta { padding: 18px 4px 0; text-align: center; }
+    .meta { padding: 20px 4px 0; text-align: center; }
     .meta h1 {
-      font-size: 30px;
+      font-size: 32px;
       font-weight: 900;
-      letter-spacing: 0.04em;
-      background: var(--grad);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
+      letter-spacing: 0.06em;
+      color: var(--ink);
     }
     .meta .who { margin-top: 6px; color: var(--dim); font-size: 14px; }
     .meta .who b { color: var(--ink); }
     .meta .serial {
-      margin-top: 8px;
+      margin-top: 10px;
       display: inline-block;
-      font-family: var(--font-d);
+      font-family: var(--font-m);
       font-size: 12px;
       letter-spacing: 0.18em;
-      color: var(--b1);
-      border: 1px solid rgba(110, 243, 255, 0.35);
-      background: rgba(110, 243, 255, 0.07);
-      border-radius: 8px;
-      padding: 4px 12px;
+      text-transform: uppercase;
+      color: var(--ink);
+      border: 1px solid var(--line-2);
+      padding: 5px 12px;
     }
 
+    /* 主按钮：白底黑字，方角，无阴影 */
     .save-btn {
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 10px;
-      margin-top: 18px;
+      margin-top: 20px;
       width: 100%;
       padding: 16px;
-      border: none;
-      border-radius: 16px;
-      background: var(--grad);
-      color: #0a0a12;
+      border: 1px solid var(--ink);
+      background: var(--ink);
+      color: var(--bg);
       font-family: var(--font-b);
       font-size: 17px;
       font-weight: 900;
       letter-spacing: 0.1em;
       text-decoration: none;
       cursor: pointer;
-      box-shadow: 0 12px 34px rgba(183, 140, 255, 0.35);
+      transition: background 0.1s linear, color 0.1s linear;
     }
-    .save-btn:active { transform: translateY(1px); }
+    .save-btn:hover { background: var(--bg); color: var(--ink); }
+    .save-btn:active { background: var(--dim); border-color: var(--dim); color: var(--bg); }
     .save-hint { margin-top: 10px; text-align: center; color: var(--faint); font-size: 12px; }
 
     .divider {
@@ -147,8 +129,9 @@
       align-items: center;
       gap: 12px;
       color: var(--faint);
-      font-size: 12px;
-      letter-spacing: 0.22em;
+      font-size: 11px;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
     }
     .divider::before, .divider::after {
       content: "";
@@ -162,27 +145,25 @@
       text-decoration: none;
       color: inherit;
       border: 1px solid var(--line);
-      border-radius: 16px;
       background: var(--panel);
       padding: 15px 16px;
       margin-bottom: 12px;
-      transition: border-color 0.25s, background 0.25s, transform 0.25s;
+      transition: border-color 0.1s linear, background 0.1s linear;
     }
-    .plan-card:hover { border-color: var(--line-2); background: var(--panel-2); transform: translateY(-2px); }
+    .plan-card:hover { border-color: var(--ink); background: #101010; }
     .plan-card .pc-head { display: flex; align-items: baseline; gap: 10px; }
     .plan-card .pc-badge {
-      font-family: var(--font-d);
-      font-weight: 700;
-      font-size: 12px;
-      letter-spacing: 0.12em;
-      color: var(--accent, var(--b1));
-      border: 1px solid color-mix(in srgb, var(--accent, var(--b1)) 45%, transparent);
-      border-radius: 7px;
+      font-family: var(--font-m);
+      font-weight: 500;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      color: var(--ink);
+      border: 1px solid var(--line-2);
       padding: 2px 8px;
       white-space: nowrap;
     }
     .plan-card h2 { font-size: 16px; font-weight: 700; }
-    .plan-card .pc-arrow { margin-left: auto; color: var(--faint); font-family: var(--font-d); }
+    .plan-card .pc-arrow { margin-left: auto; color: var(--dim); font-family: var(--font-d); }
     .plan-card p { margin-top: 6px; color: var(--dim); font-size: 13px; line-height: 1.7; }
 
     /* 空态 */
@@ -198,7 +179,7 @@
       height: 46px;
       margin-bottom: 22px;
     }
-    .empty .eq-big i { width: 6px; border-radius: 3px; background: var(--grad); animation: eqb 1.6s ease-in-out infinite; }
+    .empty .eq-big i { width: 6px; background: var(--ink); animation: eqb 1.6s linear infinite; }
     .empty .eq-big i:nth-child(1) { height: 40%; animation-delay: 0s; }
     .empty .eq-big i:nth-child(2) { height: 85%; animation-delay: 0.2s; }
     .empty .eq-big i:nth-child(3) { height: 58%; animation-delay: 0.4s; }
@@ -211,13 +192,15 @@
       display: inline-block;
       margin-top: 24px;
       padding: 14px 30px;
-      border-radius: 14px;
-      background: var(--grad);
-      color: #0a0a12;
+      border: 1px solid var(--ink);
+      background: var(--ink);
+      color: var(--bg);
       font-weight: 900;
       letter-spacing: 0.08em;
       text-decoration: none;
+      transition: background 0.1s linear, color 0.1s linear;
     }
+    .empty .go-btn:hover { background: var(--bg); color: var(--ink); }
     .empty .sub-link {
       display: inline-block;
       margin-top: 16px;
@@ -226,6 +209,7 @@
       text-decoration: underline;
       text-underline-offset: 4px;
     }
+    .empty .sub-link:hover { color: var(--ink); }
 
     .fine { margin-top: 30px; text-align: center; color: var(--faint); font-size: 11px; line-height: 1.8; }
   </style>
@@ -262,7 +246,7 @@
       <p class="save-hint">下载为 JPG；部分机型长按图片也可以直接保存</p>
 
       <p class="divider">品牌怎么玩下去 · 三套转化方案</p>
-      <a class="plan-card" style="--accent:#f0b95c" href="proposal.html#convert">
+      <a class="plan-card" href="proposal.html#convert">
         <span class="pc-head">
           <span class="pc-badge">方案 A</span>
           <h2>当场拿走</h2>
@@ -270,7 +254,7 @@
         </span>
         <p>拍完出图、大屏揭晓，工位托盘按你的音乐人格出实物：声纹贴纸 / 试听仓代币 / 小样。参考 Rhode × 818 快闪。</p>
       </a>
-      <a class="plan-card" style="--accent:#6ef3ff" href="proposal.html#convert">
+      <a class="plan-card" href="proposal.html#convert">
         <span class="pc-head">
           <span class="pc-badge">方案 B</span>
           <h2>社交加码</h2>
@@ -278,7 +262,7 @@
         </span>
         <p>海报先拿走，带 #我的声纹 发笔记，回工位或扫码页解锁限定扭蛋（线材、徽章）。参考 MAC 阿那亚快闪。</p>
       </a>
-      <a class="plan-card" style="--accent:#ff6ec7" href="proposal.html#convert">
+      <a class="plan-card" href="proposal.html#convert">
         <span class="pc-head">
           <span class="pc-badge">方案 C</span>
           <h2>人设对货盘</h2>

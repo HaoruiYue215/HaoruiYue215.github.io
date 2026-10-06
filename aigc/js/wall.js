@@ -241,7 +241,7 @@
         { transform: "translate(0px, 0px) scale(1, 1)", opacity: 1 },
         { transform: "translate(" + dx + "px, " + dy + "px) scale(" + sx + ", " + sy + ")", opacity: 0.98 }
       ],
-      { duration: FLIGHT_MS, easing: "cubic-bezier(0.22, 0.9, 0.24, 1)", fill: "forwards" }
+      { duration: FLIGHT_MS, easing: "linear", fill: "forwards" }
     );
     anim.onfinish = function () {
       ghost.remove();
