@@ -236,6 +236,10 @@
         ["#idle-video", "#shoot-video"].forEach(function (sel) {
           var v = $(sel);
           if (!v) return;
+          // iOS Safari 三件套必须落在 JS 属性上（仅 HTML 属性在事后赋值
+          // srcObject 的场景下不可靠）：muted + playsInline + 显式 play()
+          v.muted = true;
+          v.playsInline = true;
           v.srcObject = stream;
           // autoplay 属性在部分移动端（尤其 iOS Safari）对事后赋值的 srcObject 不可靠，
           // 必须显式 play()；此处处于同意按钮的点击链路，允许播放
@@ -283,11 +287,34 @@
   }
 
   /* ---------- 拍照 ---------- */
+  var COUNTDOWN_STEP_MS = 800; // 每个数字硬切停留 ~800ms
+
+  /* 运行时自检：倒计时必须真的可见。真机上若因布局塌缩 / CSS 环境
+     （如减少动态把动画钉在 opacity:0 终帧）导致不可见，立即强制修正并留日志。 */
+  function ensureCountdownVisible(el) {
+    var cs = window.getComputedStyle(el);
+    var r = el.getBoundingClientRect();
+    var bad = cs.display === "none" || cs.visibility !== "visible" ||
+              parseFloat(cs.opacity) < 1 || r.width < 2 || r.height < 2;
+    if (bad) {
+      console.warn("[kiosk] countdown not visible, forcing", {
+        display: cs.display, visibility: cs.visibility, opacity: cs.opacity,
+        w: Math.round(r.width), h: Math.round(r.height)
+      });
+      el.style.display = "flex";
+      el.style.visibility = "visible";
+      el.style.opacity = "1";
+    }
+    return !bad;
+  }
+
   function startCountdown() {
     if (state.generating || state.capturing) return;
     state.capturing = true;
     Sync.publish(Sync.STATES.SHOOTING, {});
     var el = $("#countdown");
+    var num = $("#countdown-num");
+    var dots = el.querySelectorAll(".cd-dots i");
     var seq = [3, 2, 1];
     var i = 0;
     el.hidden = false;
@@ -295,57 +322,71 @@
     function tick() {
       if (i >= seq.length) {
         el.hidden = true;
+        el.removeAttribute("data-value");
         capture();
         return;
       }
-      el.textContent = seq[i];
-      el.classList.remove("tick");
-      void el.offsetWidth; // 重启动画
-      el.classList.add("tick");
+      // 硬切：直接换字，不用任何 CSS 透明度动画 —— 动画在「减少动态」
+      // 或动画被关闭的真机环境里会停在 opacity:0 终帧，数字全程不可见
+      num.textContent = seq[i];
+      el.setAttribute("data-value", String(seq[i]));
+      for (var d = 0; d < dots.length; d++) {
+        dots[d].classList.toggle("on", d <= i);
+      }
+      ensureCountdownVisible(el);
       i++;
-      setTimeout(tick, 960);
+      setTimeout(tick, COUNTDOWN_STEP_MS);
     }
     tick();
   }
 
   /* 等视频真正出帧再拍：真机上 srcObject 赋值后 autoplay 可能没启动、
      或元数据已加载但还没有可绘制的当前帧（此时 drawImage 得到黑帧）。
-     流程：确保 muted → play() → 等 playing/loadeddata 且 videoWidth>0
+     流程：确保 muted → play() → readyState/videoWidth/playing 达标
+     → 关键：currentTime 必须真的在走（两个不同值）—— 部分移动端内核
+       playing/readyState 都会虚报，唯独解码链通了时钟才会前进
      → 有 requestVideoFrameCallback 就再等一帧实际呈现。超时报错走降级。 */
   function waitForVideoFrame(video, timeoutMs) {
     return new Promise(function (resolve, reject) {
       if (!video || !video.srcObject) { reject(new Error("no-stream")); return; }
       var done = false;
+      var t0 = video.currentTime;
+      var presented = false;
       var timer = setTimeout(function () {
         finish(new Error("video-frame-timeout"));
-      }, timeoutMs || 2500);
+      }, timeoutMs || 4000);
 
       function finish(err) {
         if (done) return;
         done = true;
         clearTimeout(timer);
+        clearInterval(iv);
         video.removeEventListener("playing", onEvent);
         video.removeEventListener("loadeddata", onEvent);
         video.removeEventListener("canplay", onEvent);
         if (err) reject(err); else resolve();
       }
 
-      function framePresented() {
-        // 再等一帧「真正呈现」，覆盖 readyState 够但首帧未上屏的窗口期
-        if (video.requestVideoFrameCallback) {
-          var rafcTimer = setTimeout(function () { finish(); }, 600); // 回调缺失时兜底放行
-          video.requestVideoFrameCallback(function () {
-            clearTimeout(rafcTimer);
-            finish();
-          });
-        } else {
-          finish();
-        }
+      function ready() {
+        return video.videoWidth > 0 && video.readyState >= 2 && !video.paused;
       }
 
       function onEvent() {
-        if (video.videoWidth > 0 && video.readyState >= 2 && !video.paused) framePresented();
+        if (done || !ready()) return;
+        if (video.currentTime > t0 || presented) { finish(); return; }
+        // 再等一帧「真正呈现」，覆盖 readyState 够但首帧未上屏的窗口期
+        if (video.requestVideoFrameCallback && !presented) {
+          video.requestVideoFrameCallback(function () {
+            presented = true;
+            finish();
+          });
+        }
       }
+
+      // 时钟前进是硬指标：每 100ms 看一眼，两个不同 currentTime 值即放行
+      var iv = setInterval(function () {
+        if (!done && ready() && video.currentTime > t0) finish();
+      }, 100);
 
       video.addEventListener("playing", onEvent);
       video.addEventListener("loadeddata", onEvent);
@@ -363,21 +404,83 @@
     });
   }
 
-  function capture() {
+  /* iOS Safari：video 不可见（hidden/opacity 0/0 尺寸）时根本不解码，
+     drawImage 必得黑帧 —— 拍摄前确认元素处于渲染态，异常则强制修正。 */
+  function ensureVideoRendered(video) {
+    var cs = window.getComputedStyle(video);
+    var r = video.getBoundingClientRect();
+    var bad = cs.display === "none" || cs.visibility !== "visible" ||
+              parseFloat(cs.opacity) === 0 || r.width < 2 || r.height < 2;
+    if (bad) {
+      console.warn("[kiosk] shoot video not rendered at capture time, forcing visible", {
+        display: cs.display, visibility: cs.visibility, opacity: cs.opacity,
+        w: Math.round(r.width), h: Math.round(r.height)
+      });
+      video.style.display = "";
+      video.style.visibility = "visible";
+      video.style.opacity = "";
+    }
+    return !bad;
+  }
+
+  /* 黑帧自检：整帧跨行抽样亮度。解码链没出真画面时像素是全 0（或极近 0），
+     而真实暗场景（音乐节现场）仍有屏幕光/噪点，max 会明显大于阈值 ——
+     用 max + mean 双门限，宁可放过暗片也不错杀。 */
+  function canvasStats(canvas) {
+    var ctx = canvas.getContext("2d");
+    var data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    var sum = 0, sumSq = 0, max = 0, n = 0;
+    for (var i = 0; i < data.length; i += 64) { // 每 16 个像素抽 1 个
+      var lum = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
+      sum += lum; sumSq += lum * lum;
+      if (lum > max) max = lum;
+      n++;
+    }
+    var mean = sum / n;
+    var variance = sumSq / n - mean * mean;
+    return { mean: mean, variance: variance, max: max, black: max < 18 && mean < 12 };
+  }
+
+  function drawVideoFrame(video) {
+    var canvas = document.createElement("canvas");
+    var scale = Math.min(1, 1080 / video.videoWidth);
+    canvas.width = Math.round(video.videoWidth * scale);
+    canvas.height = Math.round(video.videoHeight * scale);
+    var ctx = canvas.getContext("2d");
+    // 镜像：与预览所见一致（烘进像素，预览 img 不再二次镜像）
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    return canvas;
+  }
+
+  var CAPTURE_MAX_ATTEMPTS = 3;
+  var CAPTURE_RETRY_MS = 300;
+
+  function capture(attempt) {
+    attempt = attempt || 1;
     var video = $("#shoot-video");
-    waitForVideoFrame(video, 2500)
+    ensureVideoRendered(video);
+    waitForVideoFrame(video, 4000)
       .then(function () {
         if (!video.videoWidth) throw new Error("no-frame");
-        var canvas = document.createElement("canvas");
-        var scale = Math.min(1, 1080 / video.videoWidth);
-        canvas.width = Math.round(video.videoWidth * scale);
-        canvas.height = Math.round(video.videoHeight * scale);
-        var ctx = canvas.getContext("2d");
-        // 镜像：与预览所见一致（烘进像素，预览 img 不再二次镜像）
-        ctx.translate(canvas.width, 0);
-        ctx.scale(-1, 1);
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
+        var canvas = drawVideoFrame(video);
+        var stats = canvasStats(canvas);
+        console.log("[kiosk] capture #" + attempt +
+          " " + video.videoWidth + "x" + video.videoHeight +
+          " readyState=" + video.readyState +
+          " currentTime=" + video.currentTime.toFixed(2) +
+          " mean=" + stats.mean.toFixed(1) + " var=" + stats.variance.toFixed(1) +
+          " max=" + stats.max + (stats.black ? " BLACK" : ""));
+        if (stats.black) {
+          if (attempt < CAPTURE_MAX_ATTEMPTS) {
+            // 黑帧：解码链还没出真画面，等 300ms 再拍
+            setTimeout(function () { capture(attempt + 1); }, CAPTURE_RETRY_MS);
+          } else {
+            showCaptureError();
+          }
+          return;
+        }
         var flash = $("#flash");
         flash.classList.remove("on");
         void flash.offsetWidth;
@@ -386,19 +489,35 @@
         state.photoDataURL = canvas.toDataURL("image/jpeg", 0.92);
         state.uploadedUrl = null;
         state.capturing = false;
-        showPreview();
+        showPreview(stats);
       })
-      .catch(function () {
+      .catch(function (err) {
         state.capturing = false;
-        onCameraFail();
+        if (err && err.message === "no-stream") onCameraFail();
+        else showCaptureError(); // 超时/无帧：镜头还在，给「重拍」而不是误判摄像头不可用
       });
   }
 
-  function showPreview() {
+  /* 连拍 3 次仍是黑帧：明确报错 + 重拍入口，绝不把黑帧当成片展示 */
+  function showCaptureError() {
+    state.capturing = false;
+    console.warn("[kiosk] capture failed: black frame after " + CAPTURE_MAX_ATTEMPTS + " attempts");
+    $("#shoot-capture-error").hidden = false;
+  }
+
+  function showPreview(stats) {
     var img = $("#shoot-preview");
     img.src = state.photoDataURL;
     img.hidden = false;
-    $("#shoot-video").style.visibility = "hidden";
+    if (stats) {
+      img.setAttribute("data-capture-mean", stats.mean.toFixed(2));
+      img.setAttribute("data-capture-var", stats.variance.toFixed(2));
+    }
+    // 关键：不再 visibility:hidden 藏视频 —— 预览 img 是不透明 JPEG 且
+    // object-fit:cover，会完整盖住实时画面；让 video 保持渲染态，
+    // iOS 才不会对它停解码，重拍时第一帧就是真画面
+    var v = $("#shoot-video");
+    v.style.visibility = "visible";
     $("#shoot-live-actions").hidden = true;
     $("#shoot-preview-actions").hidden = false;
     var retake = $("#btn-retake");
@@ -409,9 +528,10 @@
   function backToLive() {
     state.capturing = false;
     $("#shoot-preview").hidden = true;
+    $("#shoot-capture-error").hidden = true;
     var v = $("#shoot-video");
     v.style.visibility = "visible";
-    // iOS 上 video 被 visibility:hidden 期间会暂停出帧，重拍前必须重新 play()
+    // 若视频曾被隐藏/暂停过（老路径或系统挂起），重拍前必须重新 play()
     if (state.cameraOk && v.srcObject) {
       var p = v.play();
       if (p && p.catch) p.catch(function () {});
@@ -800,6 +920,11 @@
       backToLive();
     });
 
+    // 黑帧报错层上的「重拍」：不消耗重拍次数（没拍到任何东西）
+    $("#btn-capture-retake").addEventListener("click", function () {
+      backToLive();
+    });
+
     $("#btn-use-photo").addEventListener("click", function () {
       showScreen("scr-persona");
     });
@@ -892,4 +1017,7 @@
     Sync.publish(Sync.STATES.IDLE, { reason: "kiosk-closed" });
     stopCamera();
   });
+
+  // 黑帧自检钩子：供自动化测试与真机排障直接验证分类器
+  window.SoundprintKiosk = { canvasStats: canvasStats };
 })();

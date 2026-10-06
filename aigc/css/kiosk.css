@@ -277,6 +277,9 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
   object-fit: cover;
 }
 
+/* 预览 img 叠在常开视频之上：铺底防透明 PNG（相册选图）透出实时画面 */
+.cam-frame img { background: var(--bg-2); }
+
 /* 黑白取景与镜像只作用于实时预览：拍下的照片保持原色，
    且镜像已在拍摄时烘进像素，预览 img 不再二次翻转 */
 .cam-frame video {
@@ -419,9 +422,19 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
   width: min(680px, 100%);
 }
 
+/* shoot-stage 必须是确定宽度：否则它作为 flex 子项按内容收缩，
+   cam-frame 的 width: min(46vh, 100%) 里 100% 形成循环百分比，
+   真机上整个相机框塌缩成 0×1 —— 视频不解码（黑帧）、倒计时 0×0（不可见） */
+.shoot-stage {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
 .cam-frame.big { width: min(46vh, 100%); }
 
-/* 倒计时：等宽巨字，硬切 */
+/* 倒计时：等宽巨字 + 黑底发丝框，JS 硬切（不依赖 CSS 动画，
+   减少动态/动画关闭的真机环境下数字也必须全程可见） */
 .countdown {
   position: absolute;
   inset: 0;
@@ -429,20 +442,43 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-m);
-  font-size: clamp(120px, 26vh, 240px);
-  font-weight: 600;
-  color: var(--ink);
   pointer-events: none;
 }
 
-.countdown.tick { animation: tick 0.96s linear both; }
+.cd-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(10px, 1.8vh, 18px);
+  padding: clamp(22px, 4.5vh, 44px) clamp(36px, 7vw, 72px);
+  background: rgba(10, 10, 10, 0.86);
+  border: 1px solid rgba(242, 242, 242, 0.9);
+}
 
-@keyframes tick {
-  0% { opacity: 0; }
-  12% { opacity: 1; }
-  82% { opacity: 1; }
-  100% { opacity: 0; }
+.cd-num {
+  font-family: var(--font-m);
+  font-size: clamp(110px, 24vh, 220px);
+  font-weight: 600;
+  line-height: 1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.cd-dots { display: flex; gap: 10px; }
+.cd-dots i {
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--dim);
+}
+.cd-dots i.on { background: var(--ink); border-color: var(--ink); }
+
+.cd-hint {
+  font-family: var(--font-m);
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-indent: 0.3em;
+  color: var(--dim);
+  white-space: nowrap;
 }
 
 .flash {
@@ -980,6 +1016,5 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
 /* ---------- 减少动态 ---------- */
 @media (prefers-reduced-motion: reduce) {
   .wave i, .brand-mark i, .scanline { animation: none; }
-  .countdown.tick { animation-duration: 0.01s; }
   .result-poster { animation: none; }
 }
