@@ -61,7 +61,8 @@
     uploadedUrl: null,    // 已上传成功的临时图床地址（重试时复用）
     posterCanvas: null,
     posterDataURL: null,
-    generating: false
+    generating: false,
+    capturing: false        // 倒计时/拍摄进行中，防止快门连点触发重叠拍摄
   };
 
   /* 会话 / 锁 运行态 */
@@ -234,7 +235,12 @@
         state.cameraOk = true;
         ["#idle-video", "#shoot-video"].forEach(function (sel) {
           var v = $(sel);
-          if (v) v.srcObject = stream;
+          if (!v) return;
+          v.srcObject = stream;
+          // autoplay 属性在部分移动端（尤其 iOS Safari）对事后赋值的 srcObject 不可靠，
+          // 必须显式 play()；此处处于同意按钮的点击链路，允许播放
+          var p = v.play();
+          if (p && p.catch) p.catch(function () {});
         });
         $("#idle-cam-standby").hidden = true;
         ["#idle-cam-fallback", "#shoot-cam-fallback"].forEach(function (sel) {
@@ -278,7 +284,8 @@
 
   /* ---------- 拍照 ---------- */
   function startCountdown() {
-    if (state.generating) return;
+    if (state.generating || state.capturing) return;
+    state.capturing = true;
     Sync.publish(Sync.STATES.SHOOTING, {});
     var el = $("#countdown");
     var seq = [3, 2, 1];
@@ -301,27 +308,90 @@
     tick();
   }
 
+  /* 等视频真正出帧再拍：真机上 srcObject 赋值后 autoplay 可能没启动、
+     或元数据已加载但还没有可绘制的当前帧（此时 drawImage 得到黑帧）。
+     流程：确保 muted → play() → 等 playing/loadeddata 且 videoWidth>0
+     → 有 requestVideoFrameCallback 就再等一帧实际呈现。超时报错走降级。 */
+  function waitForVideoFrame(video, timeoutMs) {
+    return new Promise(function (resolve, reject) {
+      if (!video || !video.srcObject) { reject(new Error("no-stream")); return; }
+      var done = false;
+      var timer = setTimeout(function () {
+        finish(new Error("video-frame-timeout"));
+      }, timeoutMs || 2500);
+
+      function finish(err) {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        video.removeEventListener("playing", onEvent);
+        video.removeEventListener("loadeddata", onEvent);
+        video.removeEventListener("canplay", onEvent);
+        if (err) reject(err); else resolve();
+      }
+
+      function framePresented() {
+        // 再等一帧「真正呈现」，覆盖 readyState 够但首帧未上屏的窗口期
+        if (video.requestVideoFrameCallback) {
+          var rafcTimer = setTimeout(function () { finish(); }, 600); // 回调缺失时兜底放行
+          video.requestVideoFrameCallback(function () {
+            clearTimeout(rafcTimer);
+            finish();
+          });
+        } else {
+          finish();
+        }
+      }
+
+      function onEvent() {
+        if (video.videoWidth > 0 && video.readyState >= 2 && !video.paused) framePresented();
+      }
+
+      video.addEventListener("playing", onEvent);
+      video.addEventListener("loadeddata", onEvent);
+      video.addEventListener("canplay", onEvent);
+
+      video.muted = true; // iOS：muted 属性（非仅属性节点）+ play() 才稳
+      try {
+        var p = video.play();
+        Promise.resolve(p).catch(function () {}).then(function () {
+          if (!done) onEvent();
+        });
+      } catch (e) {
+        onEvent(); // 老内核 play() 同步抛错：仍按事件/现状判断
+      }
+    });
+  }
+
   function capture() {
     var video = $("#shoot-video");
-    if (!video || !video.videoWidth) { onCameraFail(); return; }
-    var canvas = document.createElement("canvas");
-    var scale = Math.min(1, 1080 / video.videoWidth);
-    canvas.width = Math.round(video.videoWidth * scale);
-    canvas.height = Math.round(video.videoHeight * scale);
-    var ctx = canvas.getContext("2d");
-    // 镜像：与预览所见一致
-    ctx.translate(canvas.width, 0);
-    ctx.scale(-1, 1);
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    waitForVideoFrame(video, 2500)
+      .then(function () {
+        if (!video.videoWidth) throw new Error("no-frame");
+        var canvas = document.createElement("canvas");
+        var scale = Math.min(1, 1080 / video.videoWidth);
+        canvas.width = Math.round(video.videoWidth * scale);
+        canvas.height = Math.round(video.videoHeight * scale);
+        var ctx = canvas.getContext("2d");
+        // 镜像：与预览所见一致（烘进像素，预览 img 不再二次镜像）
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    var flash = $("#flash");
-    flash.classList.remove("on");
-    void flash.offsetWidth;
-    flash.classList.add("on");
+        var flash = $("#flash");
+        flash.classList.remove("on");
+        void flash.offsetWidth;
+        flash.classList.add("on");
 
-    state.photoDataURL = canvas.toDataURL("image/jpeg", 0.92);
-    state.uploadedUrl = null;
-    showPreview();
+        state.photoDataURL = canvas.toDataURL("image/jpeg", 0.92);
+        state.uploadedUrl = null;
+        state.capturing = false;
+        showPreview();
+      })
+      .catch(function () {
+        state.capturing = false;
+        onCameraFail();
+      });
   }
 
   function showPreview() {
@@ -337,8 +407,15 @@
   }
 
   function backToLive() {
+    state.capturing = false;
     $("#shoot-preview").hidden = true;
-    $("#shoot-video").style.visibility = "visible";
+    var v = $("#shoot-video");
+    v.style.visibility = "visible";
+    // iOS 上 video 被 visibility:hidden 期间会暂停出帧，重拍前必须重新 play()
+    if (state.cameraOk && v.srcObject) {
+      var p = v.play();
+      if (p && p.catch) p.catch(function () {});
+    }
     $("#shoot-live-actions").hidden = false;
     $("#shoot-preview-actions").hidden = true;
     if (state.consented && !state.cameraOk) {
@@ -629,6 +706,7 @@
     state.posterCanvas = null;
     state.posterDataURL = null;
     state.generating = false;
+    state.capturing = false;
     state.consented = false;
 
     endSession();   // 释放工位锁 + 停计时

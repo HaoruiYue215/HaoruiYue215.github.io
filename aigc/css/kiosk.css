@@ -275,6 +275,11 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* 黑白取景与镜像只作用于实时预览：拍下的照片保持原色，
+   且镜像已在拍摄时烘进像素，预览 img 不再二次翻转 */
+.cam-frame video {
   transform: scaleX(-1); /* 自拍镜像：所见即所得 */
   filter: grayscale(1) contrast(1.06); /* 黑白取景 */
 }
