@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>声纹 SOUNDPRINT · 扫码带走</title>
+  <meta name="description" content="声纹 SOUNDPRINT 音乐节 AIGC 海报工位分享页：保存你的声纹海报，看看品牌还能怎么玩。" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2307070c'/%3E%3Crect x='6' y='12' width='3.4' height='9' rx='1.7' fill='%236ef3ff'/%3E%3Crect x='11.5' y='7' width='3.4' height='18' rx='1.7' fill='%23b78cff'/%3E%3Crect x='17' y='10' width='3.4' height='13' rx='1.7' fill='%23ff6ec7'/%3E%3Crect x='22.5' y='14' width='3.4' height='6' rx='1.7' fill='%236ef3ff'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  <style>
+    /* 声纹 SOUNDPRINT · 分享落地页（Step 3）：手机优先，扫码即达 */
+    :root {
+      --bg: #07070c;
+      --panel: rgba(255, 255, 255, 0.028);
+      --panel-2: rgba(255, 255, 255, 0.05);
+      --line: rgba(255, 255, 255, 0.09);
+      --line-2: rgba(255, 255, 255, 0.16);
+      --ink: #f4f4f8;
+      --dim: #a4a4ba;
+      --faint: #6d6d85;
+      --b1: #6ef3ff;
+      --b2: #b78cff;
+      --b3: #ff6ec7;
+      --grad: linear-gradient(100deg, var(--b1), var(--b2) 52%, var(--b3));
+      --font-d: "Space Grotesk", "Noto Sans SC", system-ui, sans-serif;
+      --font-b: "Noto Sans SC", "Space Grotesk", system-ui, sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font-b);
+      font-size: 15px;
+      line-height: 1.75;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background:
+        radial-gradient(80vw 60vw at 10% -10%, rgba(110, 243, 255, 0.1), transparent 62%),
+        radial-gradient(70vw 60vw at 100% 30%, rgba(255, 110, 199, 0.07), transparent 60%),
+        radial-gradient(90vw 70vw at 50% 115%, rgba(183, 140, 255, 0.09), transparent 62%);
+    }
+    .wrap { max-width: 520px; margin: 0 auto; padding: 20px 18px 56px; }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 2px 18px;
+    }
+    .brand { display: inline-flex; align-items: center; gap: 9px; font-weight: 900; letter-spacing: 0.05em; }
+    .brand em {
+      font-family: var(--font-d);
+      font-style: normal;
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      background: var(--grad);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .brand-mark { display: inline-flex; align-items: flex-end; gap: 2.5px; height: 18px; }
+    .brand-mark i { width: 3px; border-radius: 1.5px; background: var(--grad); }
+    .brand-mark i:nth-child(1) { height: 45%; }
+    .brand-mark i:nth-child(2) { height: 90%; }
+    .brand-mark i:nth-child(3) { height: 62%; }
+    .brand-mark i:nth-child(4) { height: 100%; }
+    .brand-mark i:nth-child(5) { height: 52%; }
+    .tag {
+      font-family: var(--font-d);
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      color: var(--faint);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 10px;
+    }
+
+    .poster-card {
+      border: 1px solid var(--line-2);
+      border-radius: 20px;
+      overflow: hidden;
+      background: var(--panel);
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5), 0 0 90px rgba(183, 140, 255, 0.12);
+    }
+    .poster-card img { display: block; width: 100%; }
+
+    .meta { padding: 18px 4px 0; text-align: center; }
+    .meta h1 {
+      font-size: 30px;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      background: var(--grad);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .meta .who { margin-top: 6px; color: var(--dim); font-size: 14px; }
+    .meta .who b { color: var(--ink); }
+    .meta .serial {
+      margin-top: 8px;
+      display: inline-block;
+      font-family: var(--font-d);
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      color: var(--b1);
+      border: 1px solid rgba(110, 243, 255, 0.35);
+      background: rgba(110, 243, 255, 0.07);
+      border-radius: 8px;
+      padding: 4px 12px;
+    }
+
+    .save-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 18px;
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 16px;
+      background: var(--grad);
+      color: #0a0a12;
+      font-family: var(--font-b);
+      font-size: 17px;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      text-decoration: none;
+      cursor: pointer;
+      box-shadow: 0 12px 34px rgba(183, 140, 255, 0.35);
+    }
+    .save-btn:active { transform: translateY(1px); }
+    .save-hint { margin-top: 10px; text-align: center; color: var(--faint); font-size: 12px; }
+
+    .divider {
+      margin: 34px 0 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--faint);
+      font-size: 12px;
+      letter-spacing: 0.22em;
+    }
+    .divider::before, .divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--line);
+    }
+
+    .plan-card {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--panel);
+      padding: 15px 16px;
+      margin-bottom: 12px;
+      transition: border-color 0.25s, background 0.25s, transform 0.25s;
+    }
+    .plan-card:hover { border-color: var(--line-2); background: var(--panel-2); transform: translateY(-2px); }
+    .plan-card .pc-head { display: flex; align-items: baseline; gap: 10px; }
+    .plan-card .pc-badge {
+      font-family: var(--font-d);
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      color: var(--accent, var(--b1));
+      border: 1px solid color-mix(in srgb, var(--accent, var(--b1)) 45%, transparent);
+      border-radius: 7px;
+      padding: 2px 8px;
+      white-space: nowrap;
+    }
+    .plan-card h2 { font-size: 16px; font-weight: 700; }
+    .plan-card .pc-arrow { margin-left: auto; color: var(--faint); font-family: var(--font-d); }
+    .plan-card p { margin-top: 6px; color: var(--dim); font-size: 13px; line-height: 1.7; }
+
+    /* 空态 */
+    .empty {
+      text-align: center;
+      padding: 56px 10px 0;
+    }
+    .empty .eq-big {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 5px;
+      height: 46px;
+      margin-bottom: 22px;
+    }
+    .empty .eq-big i { width: 6px; border-radius: 3px; background: var(--grad); animation: eqb 1.6s ease-in-out infinite; }
+    .empty .eq-big i:nth-child(1) { height: 40%; animation-delay: 0s; }
+    .empty .eq-big i:nth-child(2) { height: 85%; animation-delay: 0.2s; }
+    .empty .eq-big i:nth-child(3) { height: 58%; animation-delay: 0.4s; }
+    .empty .eq-big i:nth-child(4) { height: 100%; animation-delay: 0.6s; }
+    .empty .eq-big i:nth-child(5) { height: 48%; animation-delay: 0.8s; }
+    @keyframes eqb { 0%, 100% { transform: scaleY(0.55); } 50% { transform: scaleY(1); } }
+    .empty h1 { font-size: 22px; font-weight: 900; }
+    .empty p { margin-top: 12px; color: var(--dim); font-size: 14px; }
+    .empty .go-btn {
+      display: inline-block;
+      margin-top: 24px;
+      padding: 14px 30px;
+      border-radius: 14px;
+      background: var(--grad);
+      color: #0a0a12;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-decoration: none;
+    }
+    .empty .sub-link {
+      display: inline-block;
+      margin-top: 16px;
+      color: var(--faint);
+      font-size: 13px;
+      text-decoration: underline;
+      text-underline-offset: 4px;
+    }
+
+    .fine { margin-top: 30px; text-align: center; color: var(--faint); font-size: 11px; line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <!--
+    扫码落地页（Step 3 / 5）
+    海报存在生成它的那台机器的 localStorage（演示形态：同机双窗口）。
+    用 ?id=SP-XXXX 读取；读不到时回退最近一次揭晓状态；都没有则空态。
+  -->
+  <div class="wrap">
+    <header class="topbar">
+      <span class="brand">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+        声纹 <em>SOUNDPRINT</em>
+      </span>
+      <span class="tag">音乐节 AIGC 海报工位</span>
+    </header>
+
+    <!-- 有海报 -->
+    <main id="share-has" hidden>
+      <div class="poster-card">
+        <img id="poster-img" alt="你的声纹海报" />
+      </div>
+      <div class="meta">
+        <h1 id="poster-title"></h1>
+        <p class="who" id="poster-who"></p>
+        <span class="serial" id="poster-serial"></span>
+      </div>
+      <a class="save-btn" id="btn-save" href="#" download>
+        保存图片
+        <span style="font-family:var(--font-d); font-weight:700; font-size:12px; letter-spacing:0.14em;">SAVE</span>
+      </a>
+      <p class="save-hint">下载为 JPG；部分机型长按图片也可以直接保存</p>
+
+      <p class="divider">品牌怎么玩下去 · 三套转化方案</p>
+      <a class="plan-card" style="--accent:#f0b95c" href="proposal.html#convert">
+        <span class="pc-head">
+          <span class="pc-badge">方案 A</span>
+          <h2>当场拿走</h2>
+          <span class="pc-arrow">→</span>
+        </span>
+        <p>拍完出图、大屏揭晓，工位托盘按你的音乐人格出实物：声纹贴纸 / 试听仓代币 / 小样。参考 Rhode × 818 快闪。</p>
+      </a>
+      <a class="plan-card" style="--accent:#6ef3ff" href="proposal.html#convert">
+        <span class="pc-head">
+          <span class="pc-badge">方案 B</span>
+          <h2>社交加码</h2>
+          <span class="pc-arrow">→</span>
+        </span>
+        <p>海报先拿走，带 #我的声纹 发笔记，回工位或扫码页解锁限定扭蛋（线材、徽章）。参考 MAC 阿那亚快闪。</p>
+      </a>
+      <a class="plan-card" style="--accent:#ff6ec7" href="proposal.html#convert">
+        <span class="pc-head">
+          <span class="pc-badge">方案 C</span>
+          <h2>人设对货盘</h2>
+          <span class="pc-arrow">→</span>
+        </span>
+        <p>四个曲风人格对应四款 SOUNDPRINT 耳机，海报称号即选品结果，旁侧试听台按称号戴对应款。参考 曼妥思 × 听潮阁。</p>
+      </a>
+    </main>
+
+    <!-- 空态 -->
+    <main id="share-empty" hidden>
+      <div class="empty">
+        <div class="eq-big" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+        <h1>这台设备上还没有你的声纹海报</h1>
+        <p>
+          海报只保存在生成它的那台拍照机上（演示原型不做云端存储）。<br />
+          如果你刚在现场生成过，请用<strong>同一台机器的浏览器</strong>打开这个链接；<br />
+          或者回到工位，重新生成一张。
+        </p>
+        <a class="go-btn" href="index.html">去拍照工位</a>
+        <br />
+        <a class="sub-link" href="proposal.html">先看看活动方案 →</a>
+      </div>
+    </main>
+
+    <p class="fine">声纹 SOUNDPRINT 为虚构品牌 · AI 生成，非真实拍摄<br />原始自拍不展示、不保留，生成用完即弃</p>
+  </div>
+
+  <script src="js/sync.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/share.js"></script>
+</body>
+</html>
