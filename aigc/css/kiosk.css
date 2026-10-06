@@ -280,11 +280,11 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
 /* 预览 img 叠在常开视频之上：铺底防透明 PNG（相册选图）透出实时画面 */
 .cam-frame img { background: var(--bg-2); }
 
-/* 黑白取景与镜像只作用于实时预览：拍下的照片保持原色，
+/* 实时预览就是真彩色画面：不加任何滤镜，所见即所得。
+   镜像只作用于预览；拍下的照片保持原色，
    且镜像已在拍摄时烘进像素，预览 img 不再二次翻转 */
 .cam-frame video {
   transform: scaleX(-1); /* 自拍镜像：所见即所得 */
-  filter: grayscale(1) contrast(1.06); /* 黑白取景 */
 }
 
 .corner {
