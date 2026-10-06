@@ -3,7 +3,7 @@
    - 人格 / 风格 / SKU / 提示词 映射表
    - 人格 × 风格 4×4 称号表
    - composePoster：成片打底 + 品牌锁相叠字
-   - drawQR：二维码占位（Step 3 接入真二维码，保持函数签名不变）
+   - drawQR：真二维码（vendor/qrcode.js，Step 3 接入，签名不变）
    ============================================================ */
 window.SoundprintPoster = (function () {
   "use strict";
@@ -94,9 +94,10 @@ window.SoundprintPoster = (function () {
   }
 
   /**
-   * 二维码占位（Step 3 用真二维码库替换实现，签名保持不变）。
+   * 真二维码（Step 3）：用 vendor/qrcode.js（Kazuhiko Arase, MIT）绘制。
+   * 浅色圆角底 + 深色模块，保证深色海报上可扫。
    * @param {HTMLCanvasElement} canvas
-   * @param {string} url  分享页地址（Step 3 生成）
+   * @param {string} url  分享页地址（location.origin 拼 share.html?id=编号）
    */
   function drawQR(canvas, url, x, y, size) {
     var ctx = canvas.getContext("2d");
@@ -109,29 +110,44 @@ window.SoundprintPoster = (function () {
     roundRect(ctx, qx, qy, s, s, 12);
     ctx.fill();
 
-    // 占位码眼 + 伪模块，示意位置与尺寸
-    ctx.fillStyle = "#0c0c15";
-    var m = s / 7;
-    [[0, 0], [4, 0], [0, 4]].forEach(function (pos) {
-      ctx.fillRect(qx + pos[0] * m + m * 0.35, qy + pos[1] * m + m * 0.35, m * 2.3, m * 2.3);
-      ctx.fillStyle = "rgba(244,244,248,0.96)";
-      ctx.fillRect(qx + pos[0] * m + m * 0.75, qy + pos[1] * m + m * 0.75, m * 1.5, m * 1.5);
+    var qr = null;
+    if (url && typeof window.qrcode === "function") {
+      try {
+        qr = window.qrcode(0, "M"); // typeNumber 0 = 自动选最小版本
+        qr.addData(url);
+        qr.make();
+      } catch (e) { qr = null; }
+    }
+
+    if (qr) {
+      var count = qr.getModuleCount();
+      var pad = Math.round(s * 0.1); // 静区
+      var cell = (s - pad * 2) / count;
       ctx.fillStyle = "#0c0c15";
-      ctx.fillRect(qx + pos[0] * m + m * 1.1, qy + pos[1] * m + m * 1.1, m * 0.8, m * 0.8);
-    });
-    // 伪数据模块（确定性图案，仅示意）
-    for (var r = 0; r < 7; r++) {
-      for (var c = 0; c < 7; c++) {
-        var inFinder = (r < 3 && c < 3) || (r < 3 && c > 3) || (r > 3 && c < 3);
-        if (!inFinder && ((r * 7 + c * 13) % 5 < 2)) {
-          ctx.fillRect(qx + c * m + m * 0.28, qy + r * m + m * 0.28, m * 0.44, m * 0.44);
+      for (var r = 0; r < count; r++) {
+        for (var c = 0; c < count; c++) {
+          if (qr.isDark(r, c)) {
+            ctx.fillRect(
+              qx + pad + Math.floor(c * cell),
+              qy + pad + Math.floor(r * cell),
+              Math.ceil(cell),
+              Math.ceil(cell)
+            );
+          }
         }
       }
+    } else {
+      // 库未加载或无 URL：留空底 + 提示，不画假码（扫不出比没有更糟）
+      ctx.strokeStyle = "rgba(12,12,21,0.35)";
+      ctx.lineWidth = 2;
+      roundRect(ctx, qx + 8, qy + 8, s - 16, s - 16, 8);
+      ctx.stroke();
+      ctx.font = "600 " + Math.round(s * 0.09) + 'px "Noto Sans SC", sans-serif';
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "rgba(12,12,21,0.55)";
+      ctx.fillText("码未生成", qx + s / 2, qy + s / 2);
     }
-    ctx.font = "600 " + Math.round(s * 0.085) + 'px "Space Grotesk", sans-serif';
-    ctx.textAlign = "center";
-    ctx.fillStyle = "rgba(12,12,21,0.75)";
-    ctx.fillText("STEP 3", qx + s / 2, qy + s / 2 + s * 0.03);
     ctx.restore();
   }
 
@@ -145,6 +161,7 @@ window.SoundprintPoster = (function () {
    *   nickname {string}
    *   line     {string}
    *   serial   {string} SP-XXXX
+   *   shareUrl {string} 分享页地址（二维码内容，可空）
    * @returns {HTMLCanvasElement} 1024×1280
    */
   function composePoster(opts) {
@@ -251,8 +268,8 @@ window.SoundprintPoster = (function () {
     ctx.fillStyle = "rgba(164,164,186,0.95)";
     ctx.fillText("SOUNDPRINT " + p.sku + "款 · #我的声纹", lx, lineY + 44);
 
-    // 二维码占位（右下）
-    drawQR(canvas, "", null, null, 150);
+    // 真二维码（右下）：扫码打开分享页保存海报
+    drawQR(canvas, opts.shareUrl || "", null, null, 150);
     ctx.font = '500 15px "Noto Sans SC", sans-serif';
     ctx.textAlign = "center";
     ctx.fillStyle = "rgba(164,164,186,0.9)";

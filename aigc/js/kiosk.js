@@ -24,6 +24,7 @@
     nickname: "",
     line: "",
     serial: null,
+    shareUrl: null,       // 海报二维码指向的分享页地址
     uploadedUrl: null,    // 已上传成功的临时图床地址（重试时复用）
     posterCanvas: null,
     posterDataURL: null,
@@ -355,6 +356,11 @@
       .then(function (img) {
         state.serial = Poster.randomSerial();
         var title = Poster.titleFor(state.persona, state.style);
+        // 分享页地址：相对当前页面解析，换任意静态托管路径都成立
+        state.shareUrl = new URL(
+          "share.html?id=" + encodeURIComponent(state.serial),
+          location.href
+        ).href;
         state.posterCanvas = Poster.composePoster({
           image: img,
           persona: state.persona,
@@ -362,7 +368,8 @@
           title: title,
           nickname: state.nickname,
           line: state.line,
-          serial: state.serial
+          serial: state.serial,
+          shareUrl: state.shareUrl
         });
         // 下载用 PNG；同步给大屏用 JPEG（控制 localStorage 体积）
         state.posterDataURL = state.posterCanvas.toDataURL("image/png");
@@ -386,8 +393,9 @@
       "<b>@" + escapeHtml(state.nickname) + "</b> · " +
       p.cn + " × " + s.cn + " · SOUNDPRINT " + p.sku + "款 · 编号 <b>" + state.serial + "</b>";
     showScreen("scr-result");
+    var wallDataURL = state.posterCanvas.toDataURL("image/jpeg", 0.85);
     Sync.publish(Sync.STATES.REVEAL, {
-      dataURL: state.posterCanvas.toDataURL("image/jpeg", 0.85),
+      dataURL: wallDataURL,
       title: title,
       nickname: state.nickname,
       line: state.line,
@@ -395,6 +403,17 @@
       persona: state.persona,
       style: state.style
     });
+    // 入库（Step 3）：大屏九宫格与分享页都从存档读；降采样在 store 内完成
+    if (window.SoundprintStore) {
+      window.SoundprintStore.saveFromDataURL(wallDataURL, {
+        title: title,
+        nickname: state.nickname,
+        line: state.line,
+        serial: state.serial,
+        persona: state.persona,
+        style: state.style
+      });
+    }
   }
 
   function escapeHtml(t) {
@@ -422,6 +441,7 @@
     state.nickname = "";
     state.line = "";
     state.serial = null;
+    state.shareUrl = null;
     state.uploadedUrl = null;
     state.posterCanvas = null;
     state.posterDataURL = null;
