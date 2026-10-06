@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>声纹 SOUNDPRINT · 拍照工位</title>
+  <meta name="description" content="声纹 SOUNDPRINT 音乐节 AIGC 海报工位：拍一张，选曲风人格与视觉风格，留一句话，AI 把你画进音乐节海报。" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2307070c'/%3E%3Crect x='6' y='12' width='3.4' height='9' rx='1.7' fill='%236ef3ff'/%3E%3Crect x='11.5' y='7' width='3.4' height='18' rx='1.7' fill='%23b78cff'/%3E%3Crect x='17' y='10' width='3.4' height='13' rx='1.7' fill='%23ff6ec7'/%3E%3Crect x='22.5' y='14' width='3.4' height='6' rx='1.7' fill='%236ef3ff'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/kiosk.css" />
+</head>
+<body>
+  <!--
+    拍照工位（Step 2 / 5）
+    注意：getUserMedia 摄像头仅在 localhost 或 https 环境下可用；
+    用 python -m http.server 之类的本地静态服务打开本页即可，不要用 file:// 双击。
+    摄像头被拒绝或不可用时，页面会降级为「相册选图」演示模式。
+  -->
+  <div class="noise" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <span class="brand">
+      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+      声纹&nbsp;<em>SOUNDPRINT</em>
+    </span>
+    <span class="top-right">
+      <span class="demo-badge">演示原型 · PROTOTYPE</span>
+      <button class="ghost-btn" id="btn-home" type="button">回到待机</button>
+    </span>
+  </header>
+
+  <main id="app">
+
+    <!-- ============ 1. 吸引 / 待机 ============ -->
+    <section class="screen active" id="scr-idle" data-step="idle">
+      <div class="idle-grid">
+        <div class="idle-copy">
+          <p class="eyebrow"><span>LIVE</span> 音乐节 AIGC 海报工位</p>
+          <h1 class="idle-title">
+            <span class="cn">来取你的声纹</span>
+            <span class="en">CLAIM YOUR SOUNDPRINT</span>
+          </h1>
+          <p class="idle-tag">
+            拍一张，选曲风人格和画面气质，留一句此刻的话 ——<br />
+            <strong>AI 把你画进音乐节海报</strong>，大屏全屏揭晓，扫码带走。
+          </p>
+          <ul class="idle-meta">
+            <li><b>4</b> 种曲风人格</li>
+            <li><b>4</b> 种视觉风格</li>
+            <li><b>16</b> 种称号世界</li>
+            <li>约 <b>60</b> 秒</li>
+          </ul>
+          <button class="cta" id="btn-start" type="button">
+            <span class="cta-cn">来取你的声纹</span>
+            <span class="cta-en">TAP TO START</span>
+          </button>
+          <p class="consent">
+            自拍仅用于生成风格化海报，成片可能展示于公共大屏；<strong>原始自拍不展示、不保留</strong>，生成用完即弃。AI 生成，非真实拍摄。
+          </p>
+        </div>
+        <div class="idle-cam">
+          <div class="cam-frame" id="idle-cam-frame">
+            <video id="idle-video" autoplay playsinline muted></video>
+            <div class="cam-fallback" id="idle-cam-fallback" hidden>
+              <p class="cf-title">摄像头不可用</p>
+              <p class="cf-text">需要 localhost / https 环境并允许摄像头权限；也可以直接开始，稍后用相册照片演示。</p>
+            </div>
+            <span class="corner tl"></span><span class="corner tr"></span>
+            <span class="corner bl"></span><span class="corner br"></span>
+            <span class="scanline" aria-hidden="true"></span>
+          </div>
+          <p class="cam-note">镜头待机中 · 画面不会上传或保存</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 2. 拍照 ============ -->
+    <section class="screen" id="scr-shoot" data-step="shooting">
+      <div class="shoot-wrap">
+        <p class="step-tag"><span>01</span> 拍照 · PHOTO</p>
+        <div class="shoot-stage">
+          <div class="cam-frame big" id="shoot-cam-frame">
+            <video id="shoot-video" autoplay playsinline muted></video>
+            <img id="shoot-preview" alt="拍下的自拍预览" hidden />
+            <div class="cam-fallback" id="shoot-cam-fallback" hidden>
+              <p class="cf-title">摄像头不可用</p>
+              <p class="cf-text">需要 localhost / https 环境并允许摄像头权限。可改用相册照片继续演示：</p>
+              <label class="mini-btn file-btn">
+                从相册选一张
+                <input type="file" id="file-input" accept="image/*" hidden />
+              </label>
+              <button class="mini-btn" id="btn-cam-retry" type="button">重试摄像头</button>
+            </div>
+            <div class="countdown" id="countdown" hidden>3</div>
+            <div class="flash" id="flash"></div>
+            <span class="corner tl"></span><span class="corner tr"></span>
+            <span class="corner bl"></span><span class="corner br"></span>
+          </div>
+        </div>
+        <div class="shoot-actions" id="shoot-live-actions">
+          <button class="cta" id="btn-shutter" type="button">
+            <span class="cta-cn">开始倒计时拍照</span>
+            <span class="cta-en">3 · 2 · 1</span>
+          </button>
+          <p class="hint">看镜头，倒计时结束自动拍摄</p>
+        </div>
+        <div class="shoot-actions" id="shoot-preview-actions" hidden>
+          <button class="mini-btn" id="btn-retake" type="button">重拍（剩 1 次）</button>
+          <button class="cta" id="btn-use-photo" type="button">
+            <span class="cta-cn">用这张，选人格</span>
+            <span class="cta-en">NEXT</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 3. 选曲风人格 ============ -->
+    <section class="screen" id="scr-persona" data-step="persona">
+      <div class="pick-wrap">
+        <p class="step-tag"><span>02</span> 选曲风人格 · GENRE</p>
+        <h2 class="pick-title">你的音乐人格是？</h2>
+        <div class="pick-grid" id="persona-grid">
+          <button class="pick-card" type="button" data-persona="pop" style="--accent:#f0b95c">
+            <span class="pc-cn">流行</span>
+            <span class="pc-en">POP</span>
+            <span class="pc-sku">对应机型 · 暖金单元款</span>
+          </button>
+          <button class="pick-card" type="button" data-persona="electronic" style="--accent:#6ef3ff">
+            <span class="pc-cn">电子</span>
+            <span class="pc-en">ELECTRONIC</span>
+            <span class="pc-sku">对应机型 · 霓虹低频款</span>
+          </button>
+          <button class="pick-card" type="button" data-persona="rock" style="--accent:#ff6ec7">
+            <span class="pc-cn">摇滚</span>
+            <span class="pc-en">ROCK</span>
+            <span class="pc-sku">对应机型 · 现场失真款</span>
+          </button>
+          <button class="pick-card" type="button" data-persona="folk" style="--accent:#9fb8ff">
+            <span class="pc-cn">民谣</span>
+            <span class="pc-en">FOLK</span>
+            <span class="pc-sku">对应机型 · 人声突出款</span>
+          </button>
+        </div>
+        <div class="nav-row">
+          <button class="ghost-btn" data-back="scr-shoot" type="button">← 上一步</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 4. 选视觉风格 ============ -->
+    <section class="screen" id="scr-style" data-step="style">
+      <div class="pick-wrap">
+        <p class="step-tag"><span>03</span> 选视觉风格 · STYLE</p>
+        <h2 class="pick-title">画面气质选一种</h2>
+        <div class="pick-grid" id="style-grid">
+          <button class="pick-card" type="button" data-style="film" style="--accent:#e0a458">
+            <span class="pc-cn">胶片噪点</span>
+            <span class="pc-en">FILM GRAIN</span>
+            <span class="pc-sku"> analog 颗粒 · 暖色漏光</span>
+          </button>
+          <button class="pick-card" type="button" data-style="neon" style="--accent:#6ef3ff">
+            <span class="pc-cn">赛博霓虹</span>
+            <span class="pc-en">CYBER NEON</span>
+            <span class="pc-sku">霓虹灯管 · 雨夜反光</span>
+          </button>
+          <button class="pick-card" type="button" data-style="acid" style="--accent:#c8f542">
+            <span class="pc-cn">酸性海报</span>
+            <span class="pc-en">ACID POSTER</span>
+            <span class="pc-sku">高饱和 · 金属液态</span>
+          </button>
+          <button class="pick-card" type="button" data-style="ink" style="--accent:#9fb8ff">
+            <span class="pc-cn">水墨梦核</span>
+            <span class="pc-en">INK DREAMCORE</span>
+            <span class="pc-sku">宣纸晕染 · 梦境留白</span>
+          </button>
+        </div>
+        <div class="nav-row">
+          <button class="ghost-btn" data-back="scr-persona" type="button">← 上一步</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 5. 留一句话 ============ -->
+    <section class="screen" id="scr-line" data-step="line">
+      <div class="line-wrap">
+        <p class="step-tag"><span>04</span> 留一句话 · ONE LINE</p>
+        <h2 class="pick-title">署名，并留一句此刻的话</h2>
+        <p class="line-summary" id="line-summary"></p>
+        <div class="field">
+          <label for="input-nickname">昵称 <small>必填 · 大屏会显示「正在绘制 TA 的声纹」</small></label>
+          <input id="input-nickname" type="text" maxlength="12" placeholder="例如：阿澈" autocomplete="off" />
+          <span class="counter" id="count-nickname">0 / 12</span>
+        </div>
+        <div class="field">
+          <label for="input-line">此刻的一句话 <small>可选 · 会变成海报的画面情绪</small></label>
+          <input id="input-line" type="text" maxlength="24" placeholder="例如：今晚的风都是低频" autocomplete="off" />
+          <span class="counter" id="count-line">0 / 24</span>
+        </div>
+        <p class="safety-hint" id="safety-hint" hidden></p>
+        <div class="nav-row">
+          <button class="ghost-btn" data-back="scr-style" type="button">← 上一步</button>
+          <button class="cta" id="btn-generate" type="button">
+            <span class="cta-cn">生成我的声纹海报</span>
+            <span class="cta-en">GENERATE</span>
+          </button>
+        </div>
+        <p class="fine">先审后生成：涉政 / 暴恐 / 色情 / 辱骂 / 联系方式 / 链接 / 提示词注入会被拦截，改一句再生成。</p>
+      </div>
+    </section>
+
+    <!-- ============ 6. 生成中 ============ -->
+    <section class="screen" id="scr-drawing" data-step="drawing">
+      <div class="drawing-wrap">
+        <p class="step-tag"><span>05</span> 图生图 · IMG2IMG</p>
+        <h2 class="drawing-title">正在绘制 <em id="drawing-nickname">你</em> 的声纹</h2>
+        <div class="wave" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        </div>
+        <ol class="draw-steps" id="draw-steps">
+          <li data-phase="upload">上传自拍到临时图床<span class="st"></span></li>
+          <li data-phase="generate">AI 图生图绘制中（约 15–60 秒）<span class="st"></span></li>
+          <li data-phase="compose">合成品牌海报<span class="st"></span></li>
+        </ol>
+        <div class="draw-error" id="draw-error" hidden>
+          <p class="de-title">生成失败</p>
+          <p class="de-text" id="draw-error-text"></p>
+          <div class="nav-row center">
+            <button class="ghost-btn" id="btn-draw-back" type="button">← 返回修改</button>
+            <button class="cta small" id="btn-draw-retry" type="button">
+              <span class="cta-cn">重试生成</span>
+              <span class="cta-en">RETRY</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 7. 结果 ============ -->
+    <section class="screen" id="scr-result" data-step="reveal">
+      <div class="result-wrap">
+        <div class="result-poster">
+          <img id="result-img" alt="你的声纹海报" />
+        </div>
+        <div class="result-side">
+          <p class="step-tag"><span>06</span> 揭晓 · REVEAL</p>
+          <h2 class="result-title" id="result-title">霓虹脉冲</h2>
+          <p class="result-meta" id="result-meta"></p>
+          <p class="result-note">大屏已同步揭晓（第 3 步接入 wall.html 后可见）。海报上的二维码区域为占位，扫码带走在第 3 步实现。</p>
+          <div class="result-actions">
+            <button class="cta" id="btn-download" type="button">
+              <span class="cta-cn">保存图片</span>
+              <span class="cta-en">DOWNLOAD PNG</span>
+            </button>
+            <button class="mini-btn" id="btn-again" type="button">再来一次</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="js/sync.js"></script>
+  <script src="js/safety.js"></script>
+  <script src="js/poster.js"></script>
+  <script src="js/kiosk.js"></script>
+</body>
+</html>
