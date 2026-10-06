@@ -21,6 +21,9 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+/* hidden 属性优先于本表任何 display 规则（cam-fallback / countdown 等） */
+[hidden] { display: none !important; }
+
 html, body { height: 100%; }
 
 body {
@@ -797,6 +800,153 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
   align-items: flex-start;
   gap: 14px;
   margin-top: 26px;
+}
+
+/* ---------- Step 4 · 会话倒计时 chip（顶栏，等宽数字） ---------- */
+.session-chip {
+  font-family: var(--font-m);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  padding: 5px 12px;
+  white-space: nowrap;
+}
+.session-chip b { font-weight: 600; margin-left: 4px; }
+.session-chip.low {
+  background: var(--ink);
+  color: var(--bg);
+  animation: hardblink 1s linear infinite;
+}
+
+/* ---------- Step 4 · 镜头待机（同意前不开摄像头） ---------- */
+.cam-standby {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  padding: 26px;
+  background: var(--bg-2);
+}
+.cam-standby .cf-text strong { color: var(--ink); font-weight: 700; }
+
+/* ---------- Step 4 · 拍摄须知 / 同意 ---------- */
+.consent-wrap { width: min(640px, 100%); }
+
+.consent-list {
+  list-style: none;
+  margin: 8px 0 28px;
+  border-top: 1px solid var(--line);
+}
+
+.consent-list li {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 16px;
+  align-items: baseline;
+  padding: 14px 4px;
+  border-bottom: 1px solid var(--line);
+  font-size: 15px;
+  color: var(--dim);
+}
+
+.consent-list b {
+  font-family: var(--font-m);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--ink);
+  text-transform: uppercase;
+}
+
+/* ---------- Step 4 · 演示拦截词角标（输入页右下角） ---------- */
+.demo-words {
+  position: absolute;
+  right: clamp(18px, 3.4vw, 44px);
+  bottom: 14px;
+  max-width: min(520px, 86vw);
+  font-family: var(--font-m);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--faint);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  padding: 6px 12px;
+  text-align: right;
+}
+.demo-words b { color: var(--dim); font-weight: 600; }
+
+/* ---------- Step 4 · 工位占用遮罩（第二窗口） ---------- */
+.booth-busy {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  text-align: center;
+  padding: 24px;
+}
+
+.bb-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-m);
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  color: var(--dim);
+  border: 1px solid var(--line-2);
+  padding: 6px 14px;
+}
+
+.bb-dot {
+  width: 9px;
+  height: 9px;
+  background: var(--ink);
+  animation: hardblink 1s linear infinite;
+}
+
+.bb-title {
+  margin-top: 26px;
+  font-size: clamp(40px, 7vw, 76px);
+  font-weight: 900;
+  letter-spacing: 0.1em;
+}
+
+.bb-sub { margin-top: 16px; color: var(--dim); font-size: 15px; line-height: 2; }
+
+/* ---------- Step 4 · 轻提示 toast ---------- */
+.toast {
+  position: fixed;
+  top: calc(64px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 90;
+  padding: 12px 26px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--bg);
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.14s linear, visibility 0s linear 0.14s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.toast.on {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.14s linear;
 }
 
 /* ---------- 响应式 ---------- */

@@ -16,8 +16,12 @@
   var REVEAL_MS = 5200;  // 全屏揭晓停留时长
   var FLIGHT_MS = 900;   // 揭晓 → 九宫格 飞行动画
   var CYCLE_MS = 6500;   // 吸引态轮播间隔
-  // 各状态的消息保鲜期：超过视为工位掉线，回吸引态
-  var STALE = { shooting: 150000, drawing: 210000, reveal: 30000 };
+  // 各状态的消息保鲜期：超过视为工位掉线，回吸引态。
+  // 与工位 kiosk.js 的占用常量对齐：
+  //   shooting 120s ≈ 会话总时长 90s + 30s 余量（首触锁工位到进入生成前）
+  //   drawing  210s ≈ 生成超时 150s + 60s 余量（生成期间工位计时暂停）
+  //   reveal    30s ≈ 揭晓 5.2s + 飞行 0.9s 的兜底（reveal 自带计时器）
+  var STALE = { shooting: 120000, drawing: 210000, reveal: 30000 };
 
   var CHIP_TEXT = { idle: "空闲", shooting: "拍摄中", drawing: "生成中", reveal: "揭晓中" };
 
@@ -26,7 +30,23 @@
   var watchdog = null;
   var cycleTimer = null;
 
+  /* 管理员工具（?admin=1）：键盘 d 下架当前揭晓 / 悬停选中的海报 */
+  var ADMIN = /[?&]admin=1\b/.test(location.search);
+  var removedIds = {};      // 本次会话内被下架的编号（防揭晓飞行兜底重新上墙）
+  var hoverId = null;       // 管理模式下鼠标悬停的格子
+  var revealSerial = null;  // 当前揭晓中的编号
+
   function $(sel) { return document.querySelector(sel); }
+
+  var toastTimer = null;
+  function showToast(msg) {
+    var t = $("#wall-toast");
+    if (!t) return;
+    t.textContent = msg;
+    t.classList.add("on");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove("on"); }, 2600);
+  }
 
   /* ---------- 状态 chip ---------- */
   function setChip(st) {
@@ -58,8 +78,9 @@
    * @param {object} [extra] 存档写入失败时的临时记录，保证刚揭晓的海报仍能上墙
    */
   function renderGrid(extra) {
-    var posters = Store.list();
-    if (extra && extra.id && !posters.some(function (p) { return p.id === extra.id; })) {
+    var posters = Store.list().filter(function (p) { return p && !removedIds[p.id]; });
+    if (extra && extra.id && !removedIds[extra.id] &&
+        !posters.some(function (p) { return p.id === extra.id; })) {
       posters.unshift(extra);
     }
     posters = posters.slice(0, Store.CAP);
@@ -138,6 +159,7 @@
   /* ---------- 状态进入 ---------- */
   function toIdle() {
     current = "idle";
+    revealSerial = null;
     setChip("idle");
     if (revealTimer) clearTimeout(revealTimer);
     revealTimer = null;
@@ -170,6 +192,7 @@
     if (!payload || !payload.dataURL) { toIdle(); return; }
     armWatchdog("idle"); // 清掉拍摄/生成看门狗，揭晓用自己的计时
     current = "reveal";
+    revealSerial = payload.serial || null;
     setChip("reveal");
     stopCycle();
 
@@ -212,6 +235,7 @@
     function endReveal() {
       if (current !== "reveal") return;
       current = "idle";
+      revealSerial = null;
       setChip("idle");
       startCycle();
     }
@@ -290,4 +314,43 @@
   window.addEventListener("storage", function (ev) {
     if (ev.key === Store.KEY && current === "idle") renderGrid();
   });
+
+  /* ---------- 管理员工具（?admin=1，原型最简版） ----------
+     键盘 d：下架当前揭晓中的海报；无揭晓时下架悬停选中的格子。
+     下架即出墙、出存档；分享页再扫该编号落空态。 */
+  if (ADMIN) {
+    var badge = $("#admin-badge");
+    if (badge) badge.hidden = false;
+
+    var grid = $("#wall-grid");
+    grid.addEventListener("mouseover", function (ev) {
+      var cell = ev.target.closest(".cell.filled");
+      grid.querySelectorAll(".cell.adm-sel").forEach(function (c) { c.classList.remove("adm-sel"); });
+      hoverId = null;
+      if (cell) {
+        cell.classList.add("adm-sel");
+        hoverId = cell.dataset.pid || null;
+      }
+    });
+    grid.addEventListener("mouseleave", function () {
+      hoverId = null;
+      grid.querySelectorAll(".cell.adm-sel").forEach(function (c) { c.classList.remove("adm-sel"); });
+    });
+
+    document.addEventListener("keydown", function (ev) {
+      if (ev.key !== "d" && ev.key !== "D") return;
+      var id = (current === "reveal" && revealSerial) ? revealSerial : hoverId;
+      if (!id) return;
+      removedIds[id] = true;
+      if (Store.remove(id)) {
+        showToast("已下架 " + id);
+      } else {
+        showToast("已移出墙面 " + id);
+      }
+      if (current === "reveal" && revealSerial === id) {
+        toIdle(); // 揭晓对象被下架：提前结束揭晓
+      }
+      renderGrid();
+    });
+  }
 })();

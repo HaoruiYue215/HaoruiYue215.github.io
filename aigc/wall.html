@@ -26,9 +26,12 @@
       <span class="brand-cn">声纹</span>
       <em class="brand-en">SOUNDPRINT</em>
     </span>
-    <span class="chip" id="chip" data-state="idle">
-      <span class="chip-dot" aria-hidden="true"></span>
-      <span id="chip-text">空闲</span>
+    <span class="top-right">
+      <span class="admin-badge" id="admin-badge" hidden>ADMIN · d 下架</span>
+      <span class="chip" id="chip" data-state="idle">
+        <span class="chip-dot" aria-hidden="true"></span>
+        <span id="chip-text">空闲</span>
+      </span>
     </span>
   </header>
 
@@ -103,6 +106,9 @@
     </section>
 
   </main>
+
+  <!-- 管理员操作轻提示 -->
+  <div class="wall-toast" id="wall-toast" role="status" aria-live="polite"></div>
 
   <script src="js/sync.js"></script>
   <script src="js/store.js"></script>

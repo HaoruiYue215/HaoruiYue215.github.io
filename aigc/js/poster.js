@@ -48,10 +48,31 @@ window.SoundprintPoster = (function () {
     return "SP-" + s;
   }
 
-  /**
-   * 品牌沙盒提示词：保留五官身份、戴上对应款耳机、音乐节海报气质；
-   * 用户那句话只作为画面情绪进入提示词。
-   */
+  /* ============================================================
+     品牌沙盒提示词模板（安全四层之 L3 · 生成约束，定稿 v2）
+     ------------------------------------------------------------
+     固定骨架：
+       keep the same face and identity, festival concert poster,
+       {style.prompt}, {persona.en} music atmosphere,
+       wearing SOUNDPRINT {persona.skuEn} headphones,
+       mood from "{line}" | euphoric festival mood
+     负面约束（追加在末尾，挡输出越界）：
+       no nudity, no suggestive content,        —— 色情
+       no violence, no blood, no weapons,       —— 暴恐
+       no politician, no political symbols,     —— 涉政
+       no competitor logos, no brand marks,     —— 竞品（品牌后叠，不让模型画）
+       no extra text, no captions, no watermark —— 文字乱入（文案全部由 Canvas 叠）
+     说明：
+     - 用户输入已过 L2 敏感词/正则才进提示词，且只作为画面情绪引用；
+     - 用户句子截断到 60 字符并去掉引号换行，降低注入面；
+     - 品牌元素（Logo / 称号 / 编号 / 二维码）一律 Canvas 后叠，
+       模型自由发挥也不动品牌锁相。
+     ============================================================ */
+  var NEGATIVE =
+    "no nudity, no suggestive content, no violence, no blood, no weapons, " +
+    "no politician, no political symbols, no competitor logos, no brand marks, " +
+    "no extra text, no captions, no watermark";
+
   function buildPrompt(opts) {
     var p = persona(opts.persona);
     var s = style(opts.style);
@@ -60,7 +81,7 @@ window.SoundprintPoster = (function () {
     return (
       "keep the same face and identity, festival concert poster, " +
       s.prompt + ", " + p.en + " music atmosphere, wearing SOUNDPRINT " +
-      p.skuEn + " headphones, " + mood + ", no extra text, no watermark"
+      p.skuEn + " headphones, " + mood + ", " + NEGATIVE
     );
   }
 
@@ -276,6 +297,7 @@ window.SoundprintPoster = (function () {
     titleFor: titleFor,
     randomSerial: randomSerial,
     buildPrompt: buildPrompt,
+    NEGATIVE: NEGATIVE,
     composePoster: composePoster,
     drawQR: drawQR
   };

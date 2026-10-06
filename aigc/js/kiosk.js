@@ -1,8 +1,20 @@
 /* ============================================================
-   声纹 SOUNDPRINT · 拍照工位主流程（Step 2 / 5）
-   待机 → 拍照(倒计时/重拍) → 选人格 → 选风格 → 留一句话(安全校验)
-        → 上传临时图床 → Pollinations kontext 图生图 → Canvas 合成 → 揭晓
-   每一步通过 SoundprintSync 发布状态，供 Step 3 大屏消费。
+   声纹 SOUNDPRINT · 拍照工位主流程
+   （Step 2 流程 / Step 4 内容安全与占用控制加固）
+   待机 → 拍摄须知(明确同意才开镜头) → 拍照(倒计时/重拍) → 选人格
+        → 选风格 → 留一句话(分类安全校验) → 上传临时图床
+        → Pollinations 图生图 → Canvas 合成 → 揭晓
+   每一步通过 SoundprintSync 发布状态，供大屏消费。
+
+   占用控制（常量与大屏 wall.js 的 STALE 看门狗对齐）：
+   - 首触「来取你的声纹」即锁工位（localStorage 心跳锁），
+     第二窗口看到「工位占用中」，持锁窗口失联 10s 锁可被接管；
+   - 会话总时长 90s、单步无操作 60s，任一超时就 toast
+     「超时，工位已释放」→ 回待机 → 广播 idle；
+   - 生成等待期间两个计时都暂停（占用方是机器不是用户），
+     生成成功/失败后恢复；
+   - 完成（再来一次 / 回到待机 / 关页）即释放。
+   演示/测试可用 URL 秒级覆盖：?t_session=20&t_idle=8
    ============================================================ */
 (function () {
   "use strict";
@@ -11,13 +23,34 @@
   var Safety = window.SoundprintSafety;
   var Poster = window.SoundprintPoster;
 
+  /* ---------- 占用控制常量（改这里，wall.js STALE 跟着对齐） ---------- */
+  var SESSION_TOTAL_MS = 90 * 1000;   // 会话总时长：首触锁工位起算（生成等待暂停）
+  var STEP_IDLE_MS = 60 * 1000;       // 单步无操作超时：任何交互重置
+  var LOCK_HEARTBEAT_MS = 3 * 1000;   // 工位锁心跳间隔
+  var LOCK_STALE_MS = 10 * 1000;      // 锁失联判定：超过视为持有者掉线，可被接管
+  var BUSY_POLL_MS = 2 * 1000;        // 第二窗口轮询锁的间隔
+
   var GENERATE_TIMEOUT = 150000; // kontext 生成可能较慢，150 秒超时
   var RETAKES_MAX = 1;
+
+  var LOCK_KEY = "soundprint:booth:lock";
+
+  // 演示/测试覆盖（秒）：?t_session=20&t_idle=8
+  (function applyOverrides() {
+    try {
+      var qs = new URLSearchParams(location.search);
+      var s = parseInt(qs.get("t_session"), 10);
+      var i = parseInt(qs.get("t_idle"), 10);
+      if (s >= 10 && s <= 600) SESSION_TOTAL_MS = s * 1000;
+      if (i >= 3 && i <= 300) STEP_IDLE_MS = i * 1000;
+    } catch (e) {}
+  })();
 
   var state = {
     stream: null,
     cameraOk: false,
-    photoDataURL: null,   // 本地自拍（只用于生成，不上墙、不保留）
+    consented: false,       // 本场会话是否已过拍摄须知
+    photoDataURL: null,     // 本地自拍（只用于生成，不上墙、不保留）
     retakesLeft: RETAKES_MAX,
     persona: null,
     style: null,
@@ -31,6 +64,17 @@
     generating: false
   };
 
+  /* 会话 / 锁 运行态 */
+  var session = {
+    active: false,
+    lockId: null,
+    endsAt: 0,        // 会话截止时刻（生成暂停时顺延）
+    pausedAt: 0,      // 生成开始时刻（0 = 未暂停）
+    idleTimer: null,  // 单步无操作计时
+    heartbeat: null,  // 锁心跳
+    tick: null        // 倒计时显示
+  };
+
   /* ---------- 小工具 ---------- */
   function $(sel) { return document.querySelector(sel); }
 
@@ -38,11 +82,6 @@
     document.querySelectorAll(".screen").forEach(function (el) {
       el.classList.toggle("active", el.id === id);
     });
-  }
-
-  function currentScreen() {
-    var el = document.querySelector(".screen.active");
-    return el ? el.id : null;
   }
 
   function dataURLToBlob(dataURL) {
@@ -54,9 +93,135 @@
     return new Blob([arr], { type: mime });
   }
 
+  var toastTimer = null;
+  function showToast(msg, ms) {
+    var t = $("#toast");
+    t.textContent = msg;
+    t.classList.add("on");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove("on"); }, ms || 3400);
+  }
+
+  /* ---------- 工位锁（localStorage + 心跳 + 失联接管） ---------- */
+  function lockRead() {
+    try {
+      var raw = localStorage.getItem(LOCK_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+
+  function lockFresh(lock) {
+    return !!lock && (Date.now() - (lock.ts || 0)) < LOCK_STALE_MS;
+  }
+
+  function lockWrite() {
+    try {
+      localStorage.setItem(LOCK_KEY, JSON.stringify({ id: session.lockId, ts: Date.now() }));
+    } catch (e) {}
+  }
+
+  /** 尝试持锁：无人持锁或锁已失联则成功。 */
+  function acquireLock() {
+    var cur = lockRead();
+    if (lockFresh(cur) && cur.id !== session.lockId) return false;
+    lockWrite();
+    session.heartbeat = setInterval(lockWrite, LOCK_HEARTBEAT_MS);
+    return true;
+  }
+
+  function releaseLock() {
+    if (session.heartbeat) clearInterval(session.heartbeat);
+    session.heartbeat = null;
+    var cur = lockRead();
+    if (cur && cur.id === session.lockId) {
+      try { localStorage.removeItem(LOCK_KEY); } catch (e) {}
+    }
+  }
+
+  /* ---------- 会话计时：总时长 + 单步无操作，生成期间暂停 ---------- */
+  function fmtLeft(ms) {
+    var s = Math.max(0, Math.ceil(ms / 1000));
+    var m = Math.floor(s / 60);
+    return (m > 0 ? "0" + m : "00").slice(-2) + ":" + ("0" + (s % 60)).slice(-2);
+  }
+
+  function renderClock() {
+    var chip = $("#session-chip");
+    if (!session.active) { chip.hidden = true; return; }
+    chip.hidden = false;
+    var left = session.endsAt - (session.pausedAt || Date.now());
+    $("#session-left").textContent = fmtLeft(left);
+    chip.classList.toggle("low", !session.pausedAt && left <= 15000);
+  }
+
+  function armIdle() {
+    if (session.idleTimer) clearTimeout(session.idleTimer);
+    session.idleTimer = setTimeout(onTimeout, STEP_IDLE_MS);
+  }
+
+  /** 生成开始：计时暂停（占用方是机器）；结束：顺延并恢复。 */
+  function pauseTimers() {
+    if (!session.active || session.pausedAt) return;
+    session.pausedAt = Date.now();
+    if (session.idleTimer) clearTimeout(session.idleTimer);
+    session.idleTimer = null;
+    renderClock();
+  }
+
+  function resumeTimers() {
+    if (!session.active || !session.pausedAt) return;
+    session.endsAt += Date.now() - session.pausedAt;
+    session.pausedAt = 0;
+    armIdle();
+    renderClock();
+  }
+
+  function startSession() {
+    session.active = true;
+    session.endsAt = Date.now() + SESSION_TOTAL_MS;
+    session.pausedAt = 0;
+    armIdle();
+    session.tick = setInterval(function () {
+      renderClock();
+      if (!session.pausedAt && Date.now() >= session.endsAt) onTimeout();
+    }, 500);
+    renderClock();
+  }
+
+  function endSession() {
+    session.active = false;
+    session.pausedAt = 0;
+    if (session.idleTimer) clearTimeout(session.idleTimer);
+    if (session.tick) clearInterval(session.tick);
+    session.idleTimer = null;
+    session.tick = null;
+    releaseLock();
+    renderClock();
+  }
+
+  function onTimeout() {
+    if (!session.active) return;
+    showToast("超时，工位已释放");
+    resetToIdle();
+  }
+
+  /* 任何交互都重置单步无操作计时（生成中除外） */
+  function poke() {
+    if (session.active && !session.pausedAt) armIdle();
+  }
+
+  /* ---------- 工位占用遮罩（第二窗口） ---------- */
+  function refreshBusy() {
+    var busy = $("#booth-busy");
+    if (session.active) { busy.hidden = true; return; }
+    var cur = lockRead();
+    busy.hidden = !(lockFresh(cur) && cur.id !== session.lockId);
+  }
+
   /* ---------- 摄像头 ----------
      getUserMedia 只在 localhost / https 可用；被拒绝或环境不支持时
-     降级为「相册选图」演示模式，不阻塞流程。 */
+     降级为「相册选图」演示模式，不阻塞流程。
+     Step 4：镜头只在拍摄须知明确同意后开启，会话结束即关闭。 */
   function initCamera() {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       onCameraFail();
@@ -71,6 +236,7 @@
           var v = $(sel);
           if (v) v.srcObject = stream;
         });
+        $("#idle-cam-standby").hidden = true;
         ["#idle-cam-fallback", "#shoot-cam-fallback"].forEach(function (sel) {
           var el = $(sel);
           if (el) el.hidden = true;
@@ -81,6 +247,7 @@
 
   function onCameraFail() {
     state.cameraOk = false;
+    $("#idle-cam-standby").hidden = true;
     ["#idle-cam-fallback", "#shoot-cam-fallback"].forEach(function (sel) {
       var el = $(sel);
       if (el) el.hidden = false;
@@ -94,6 +261,19 @@
       state.stream.getTracks().forEach(function (t) { t.stop(); });
       state.stream = null;
     }
+    state.cameraOk = false;
+    ["#idle-video", "#shoot-video"].forEach(function (sel) {
+      var v = $(sel);
+      if (v) v.srcObject = null;
+    });
+    // 回到「同意前」状态：待机层复位，等待下一次明确同意
+    $("#idle-cam-standby").hidden = false;
+    ["#idle-cam-fallback", "#shoot-cam-fallback"].forEach(function (sel) {
+      var el = $(sel);
+      if (el) el.hidden = true;
+    });
+    var shutter = $("#btn-shutter");
+    if (shutter) shutter.disabled = false;
   }
 
   /* ---------- 拍照 ---------- */
@@ -161,7 +341,7 @@
     $("#shoot-video").style.visibility = "visible";
     $("#shoot-live-actions").hidden = false;
     $("#shoot-preview-actions").hidden = true;
-    if (!state.cameraOk) {
+    if (state.consented && !state.cameraOk) {
       $("#shoot-cam-fallback").hidden = false;
     }
   }
@@ -322,18 +502,20 @@
 
   function showDrawError(message) {
     state.generating = false;
+    resumeTimers(); // 失败回到用户手里：恢复计时，超时仍会释放
     $("#draw-error-text").textContent = message;
     $("#draw-error").hidden = false;
     document.querySelectorAll("#draw-steps li.doing").forEach(function (li) {
       li.classList.remove("doing");
     });
-    // 失败释放工位：大屏回吸引态，不把报错当内容
+    // 失败即释放墙面：大屏回吸引态，不把报错当内容
     Sync.publish(Sync.STATES.IDLE, { reason: "generation-failed" });
   }
 
   function runGeneration() {
     if (state.generating) return;
     state.generating = true;
+    pauseTimers(); // 生成等待不计入会话/单步超时
     $("#draw-error").hidden = true;
     $("#drawing-nickname").textContent = state.nickname;
     resetPhases();
@@ -374,6 +556,7 @@
         // 下载用 PNG；同步给大屏用 JPEG（控制 localStorage 体积）
         state.posterDataURL = state.posterCanvas.toDataURL("image/png");
         state.generating = false;
+        resumeTimers();
         finishPhase();
         showResult(title);
       })
@@ -383,7 +566,7 @@
       });
   }
 
-  /* ---------- 结果 ---------- */
+  /* ---------- 结果（只有「输入过审 + 生成成功」才到这里，才上墙） ---------- */
   function showResult(title) {
     var p = Poster.persona(state.persona);
     var s = Poster.style(state.style);
@@ -432,7 +615,7 @@
     a.remove();
   }
 
-  /* ---------- 重置 ---------- */
+  /* ---------- 重置：释放工位、关镜头、回待机、广播空闲 ---------- */
   function resetToIdle() {
     state.photoDataURL = null;
     state.retakesLeft = RETAKES_MAX;
@@ -446,6 +629,10 @@
     state.posterCanvas = null;
     state.posterDataURL = null;
     state.generating = false;
+    state.consented = false;
+
+    endSession();   // 释放工位锁 + 停计时
+    stopCamera();   // 镜头随会话关闭，下一位重新走同意
 
     $("#input-nickname").value = "";
     $("#input-line").value = "";
@@ -455,6 +642,7 @@
     backToLive();
     showScreen("scr-idle");
     Sync.publish(Sync.STATES.IDLE, {});
+    refreshBusy();
   }
 
   /* ---------- 输入与安全 ---------- */
@@ -476,17 +664,20 @@
     }
     var cn = Safety.check(nickname);
     if (!cn.ok) {
-      hint.textContent = "昵称没过审：" + cn.reason;
+      // 拦截：停在输入页改字，不请求模型；大屏回吸引态，不占墙
+      hint.textContent = "昵称没过审 —— " + cn.reason;
       hint.hidden = false;
       $("#input-nickname").focus();
+      Sync.publish(Sync.STATES.IDLE, { reason: "input-blocked" });
       return;
     }
     if (line) {
       var cl = Safety.check(line);
       if (!cl.ok) {
-        hint.textContent = "这句话没过审：" + cl.reason;
+        hint.textContent = "这句话没过审 —— " + cl.reason;
         hint.hidden = false;
         $("#input-line").focus();
+        Sync.publish(Sync.STATES.IDLE, { reason: "input-blocked" });
         return;
       }
     }
@@ -496,13 +687,31 @@
     runGeneration();
   }
 
+  /* ---------- 开始：首触锁工位 → 拍摄须知 → 同意才开镜 ---------- */
+  function onStartTap() {
+    if (!acquireLock()) { refreshBusy(); return; } // 被另一窗口占用
+    startSession();
+    Sync.publish(Sync.STATES.SHOOTING, {}); // 首触即锁，大屏转「拍摄中」
+    showScreen("scr-consent");
+  }
+
+  function onConsentYes() {
+    state.consented = true;
+    backToLive();
+    showScreen("scr-shoot");
+    initCamera(); // 明确同意之后才请求摄像头
+  }
+
+  function onConsentNo() {
+    showToast("已取消，工位已释放");
+    resetToIdle();
+  }
+
   /* ---------- 事件绑定 ---------- */
   function bind() {
-    $("#btn-start").addEventListener("click", function () {
-      backToLive();
-      showScreen("scr-shoot");
-      Sync.publish(Sync.STATES.SHOOTING, {}); // 开始即锁工位
-    });
+    $("#btn-start").addEventListener("click", onStartTap);
+    $("#btn-consent-yes").addEventListener("click", onConsentYes);
+    $("#btn-consent-no").addEventListener("click", onConsentNo);
 
     $("#btn-shutter").addEventListener("click", startCountdown);
 
@@ -520,7 +729,6 @@
     $("#btn-cam-retry").addEventListener("click", function () {
       $("#shoot-cam-fallback").hidden = true;
       initCamera();
-      if (state.cameraOk) $("#btn-shutter").disabled = false;
     });
 
     $("#file-input").addEventListener("change", function (ev) {
@@ -584,16 +792,25 @@
       if (state.generating) return; // 生成中不允许中断（fetch 不可随意取消，避免半张图）
       resetToIdle();
     });
+
+    // 单步无操作计时：任何交互都重置
+    document.addEventListener("pointerdown", poke, true);
+    document.addEventListener("keydown", poke, true);
   }
 
   /* ---------- 启动 ---------- */
+  session.lockId = "kiosk-" + Math.random().toString(36).slice(2) + Date.now().toString(36);
   bind();
-  initCamera();
   updateCounters();
+  // 演示拦截词角标（评审逐类点一遍用）
+  $("#demo-words").innerHTML = "<b>演示拦截词</b> " + Safety.DEMO_WORDS.join(" / ");
   Sync.publish(Sync.STATES.IDLE, {}); // 页面加载即广播空闲，避免大屏假死占用
+  refreshBusy();
+  setInterval(refreshBusy, BUSY_POLL_MS); // 持锁窗口释放/失联后自动开放
 
   // 工位页关闭 / 刷新时释放工位
   window.addEventListener("beforeunload", function () {
+    endSession();
     Sync.publish(Sync.STATES.IDLE, { reason: "kiosk-closed" });
     stopCamera();
   });

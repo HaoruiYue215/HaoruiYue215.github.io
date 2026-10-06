@@ -114,6 +114,26 @@ window.SoundprintStore = (function () {
     }).catch(function () { return null; });
   }
 
+  /**
+   * 下架一张海报（安全四层之 L4 · 人工兜底）。
+   * 大屏 ?admin=1 模式下按 d 键调用；移除后九宫格即时重排，
+   * 分享页再扫该编号会落空态。
+   * @param {string} id 海报编号（SP-XXXX）
+   * @returns {boolean} 是否确有这张并被移除
+   */
+  function remove(id) {
+    if (!id) return false;
+    var arr = read();
+    var next = arr.filter(function (r) { return r && r.id !== id; });
+    if (next.length === arr.length) return false;
+    try {
+      write(next);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   function clear() {
     try { localStorage.removeItem(KEY); } catch (e) {}
   }
@@ -125,6 +145,7 @@ window.SoundprintStore = (function () {
     get: get,
     save: save,
     saveFromDataURL: saveFromDataURL,
+    remove: remove,
     clear: clear
   };
 })();

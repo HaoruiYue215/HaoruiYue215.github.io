@@ -13,10 +13,12 @@
 </head>
 <body>
   <!--
-    拍照工位（Step 2 / 5）
+    拍照工位（Step 2 流程 / Step 4 安全与占用加固）
     注意：getUserMedia 摄像头仅在 localhost 或 https 环境下可用；
     用 python -m http.server 之类的本地静态服务打开本页即可，不要用 file:// 双击。
     摄像头被拒绝或不可用时，页面会降级为「相册选图」演示模式。
+    Step 4：镜头在「拍摄须知」明确同意后才开启；首触即锁工位（localStorage
+    心跳锁），会话 90s / 单步无操作 60s 超时释放；第二窗口显示「工位占用中」。
   -->
   <div class="noise" aria-hidden="true"></div>
 
@@ -26,6 +28,7 @@
       声纹&nbsp;<em>SOUNDPRINT</em>
     </span>
     <span class="top-right">
+      <span class="session-chip" id="session-chip" hidden>会话 <b id="session-left">01:30</b></span>
       <span class="demo-badge">演示原型 · PROTOTYPE</span>
       <button class="ghost-btn" id="btn-home" type="button">回到待机</button>
     </span>
@@ -63,6 +66,10 @@
         <div class="idle-cam">
           <div class="cam-frame" id="idle-cam-frame">
             <video id="idle-video" autoplay playsinline muted></video>
+            <div class="cam-standby" id="idle-cam-standby">
+              <p class="cf-title">镜头待命中</p>
+              <p class="cf-text">点「来取你的声纹」后先阅读拍摄须知，<strong>同意才会开启镜头</strong>。</p>
+            </div>
             <div class="cam-fallback" id="idle-cam-fallback" hidden>
               <p class="cf-title">摄像头不可用</p>
               <p class="cf-text">需要 localhost / https 环境并允许摄像头权限；也可以直接开始，稍后用相册照片演示。</p>
@@ -71,8 +78,31 @@
             <span class="corner bl"></span><span class="corner br"></span>
             <span class="scanline" aria-hidden="true"></span>
           </div>
-          <p class="cam-note">镜头待机中 · 画面不会上传或保存</p>
+          <p class="cam-note">先同意后开镜 · 画面不会上传或保存</p>
         </div>
+      </div>
+    </section>
+
+    <!-- ============ 1.5 拍摄须知与同意（安全四层之 L1） ============ -->
+    <section class="screen" id="scr-consent" data-step="consent">
+      <div class="consent-wrap">
+        <p class="step-tag"><span>00</span> 拍摄须知 · CONSENT</p>
+        <h2 class="pick-title">开始之前，请确认</h2>
+        <ul class="consent-list">
+          <li><b>用途</b><span>自拍仅用于生成风格化海报；不做人脸识别，不建人脸底库</span></li>
+          <li><b>上墙</b><span>生成的成片可能展示于公共大屏，并可被扫码带走</span></li>
+          <li><b>原图</b><span>原始自拍不展示、不保留，生成用完即弃</span></li>
+          <li><b>性质</b><span>海报为 AI 生成，非真实拍摄</span></li>
+          <li><b>未成年人</b><span>需监护人在场陪同拍摄</span></li>
+        </ul>
+        <div class="nav-row">
+          <button class="ghost-btn" id="btn-consent-no" type="button">不同意，返回</button>
+          <button class="cta" id="btn-consent-yes" type="button">
+            <span class="cta-cn">我已知晓，同意拍摄</span>
+            <span class="cta-en">AGREE &amp; START</span>
+          </button>
+        </div>
+        <p class="fine">点「同意」即开启镜头并锁定本工位（会话 90 秒，单步无操作 60 秒自动释放）。本页没有任何预勾选项。</p>
       </div>
     </section>
 
@@ -214,7 +244,8 @@
             <span class="cta-en">GENERATE</span>
           </button>
         </div>
-        <p class="fine">先审后生成：涉政 / 暴恐 / 色情 / 辱骂 / 联系方式 / 链接 / 提示词注入会被拦截，改一句再生成。</p>
+        <p class="fine">先审后生成：涉政 / 暴恐 / 色情 / 辱骂 / 歧视 / 竞品名 / 联系方式 / 链接 / 提示词注入会被拦截，改一句再生成。</p>
+        <p class="demo-words" id="demo-words" aria-hidden="true"></p>
       </div>
     </section>
 
@@ -268,6 +299,18 @@
     </section>
 
   </main>
+
+  <!-- 工位占用遮罩：另一窗口持锁时覆盖全屏，解锁后自动消失 -->
+  <div class="booth-busy" id="booth-busy" hidden>
+    <div class="bb-box">
+      <p class="bb-tag"><span class="bb-dot" aria-hidden="true"></span> BOOTH OCCUPIED</p>
+      <h2 class="bb-title">工位占用中</h2>
+      <p class="bb-sub">另一位参与者正在使用本工位。<br />上一位完成或超时后自动开放，请稍候。</p>
+    </div>
+  </div>
+
+  <!-- 轻提示（超时释放等） -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="js/vendor/qrcode.js"></script>
   <script src="js/sync.js"></script>

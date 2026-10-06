@@ -21,6 +21,9 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+/* hidden 属性优先于本表任何 display 规则 */
+[hidden] { display: none !important; }
+
 html, body { height: 100%; }
 
 body {
@@ -482,6 +485,43 @@ body {
   pointer-events: none;
   border: 1px solid var(--ink);
 }
+
+/* ---------- Step 4 · 管理员工具（?admin=1） ---------- */
+.wall-top .top-right { display: inline-flex; align-items: center; gap: 10px; }
+
+.admin-badge {
+  font-family: var(--font-m);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--dim);
+  border: 1px solid var(--line-2);
+  padding: 6px 10px;
+  background: var(--bg);
+  white-space: nowrap;
+}
+
+.cell.adm-sel { outline: 1px solid var(--ink); outline-offset: -1px; z-index: 2; }
+
+.wall-toast {
+  position: fixed;
+  bottom: clamp(18px, 3vh, 36px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 90;
+  padding: 10px 24px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--bg);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.14s linear, visibility 0s linear 0.14s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.wall-toast.on { opacity: 1; visibility: visible; transition: opacity 0.14s linear; }
 
 /* ---------- 窄屏兜底（演示窗口非 16:9 时仍可用） ---------- */
 @media (max-aspect-ratio: 4/3) {
