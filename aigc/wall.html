@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>声纹 SOUNDPRINT · 展示大屏</title>
+  <meta name="description" content="声纹 SOUNDPRINT 音乐节 AIGC 海报工位的展示大屏：吸引轮播、拍摄/生成状态、全屏揭晓、九宫格海报墙。" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2307070c'/%3E%3Crect x='6' y='12' width='3.4' height='9' rx='1.7' fill='%236ef3ff'/%3E%3Crect x='11.5' y='7' width='3.4' height='18' rx='1.7' fill='%23b78cff'/%3E%3Crect x='17' y='10' width='3.4' height='13' rx='1.7' fill='%23ff6ec7'/%3E%3Crect x='22.5' y='14' width='3.4' height='6' rx='1.7' fill='%236ef3ff'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/wall.css" />
+</head>
+<body>
+  <!--
+    展示大屏（Step 3 / 5）· 16:9
+    与拍照工位同机双窗口演示：用本地静态服务同时打开
+    index.html（工位）与本页（大屏），状态经 SoundprintSync 同步。
+    本页只消费状态、只展示过审成片，不发布任何指令。
+  -->
+  <div class="noise" aria-hidden="true"></div>
+
+  <header class="wall-top">
+    <span class="brand">
+      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+      <span class="brand-cn">声纹</span>
+      <em class="brand-en">SOUNDPRINT</em>
+    </span>
+    <span class="chip" id="chip" data-state="idle">
+      <span class="chip-dot" aria-hidden="true"></span>
+      <span id="chip-text">空闲</span>
+    </span>
+  </header>
+
+  <main class="wall-main">
+
+    <!-- ============ 吸引态：品牌 + 九宫格海报墙 ============ -->
+    <section class="layer on" id="layer-idle">
+      <div class="idle-side">
+        <p class="eyebrow"><span>LIVE</span> 音乐节 AIGC 海报工位</p>
+        <h1 class="idle-title">
+          <span class="cn">来取你的声纹</span>
+          <span class="en">CLAIM YOUR SOUNDPRINT</span>
+        </h1>
+        <p class="idle-sub">
+          走到拍照工位前：拍一张，选曲风人格与画面气质，留一句此刻的话 ——
+          <strong>AI 把你画进音乐节海报</strong>，在这里全屏揭晓，扫码带走。
+        </p>
+        <ul class="idle-meta">
+          <li><b>4</b> 曲风人格</li>
+          <li><b>4</b> 视觉风格</li>
+          <li><b>16</b> 称号世界</li>
+          <li>约 <b>60</b> 秒</li>
+        </ul>
+        <p class="idle-count" id="idle-count" hidden>已诞生 <b id="idle-count-n">0</b> 张声纹海报</p>
+      </div>
+      <div class="grid-wrap">
+        <div class="wall-grid" id="wall-grid" aria-label="声纹海报九宫格"></div>
+      </div>
+    </section>
+
+    <!-- ============ 拍摄中 ============ -->
+    <section class="layer" id="layer-shooting">
+      <div class="center-box">
+        <div class="cam-ring" aria-hidden="true">
+          <span class="rec-dot"></span>
+          <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+            <circle cx="12" cy="13" r="4" />
+          </svg>
+        </div>
+        <h2 class="state-title">正在拍摄…</h2>
+        <p class="state-sub">工位占用中 · 下一位请稍候</p>
+      </div>
+    </section>
+
+    <!-- ============ 生成中 ============ -->
+    <section class="layer" id="layer-drawing">
+      <div class="center-box">
+        <h2 class="state-title">正在绘制 <em id="drawing-nickname">TA</em> 的声纹</h2>
+        <div class="wave" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        </div>
+        <p class="state-sub">AI 图生图绘制中 · 约 15–60 秒 · 成片先审后上墙</p>
+      </div>
+    </section>
+
+    <!-- ============ 全屏揭晓 ============ -->
+    <section class="layer" id="layer-reveal">
+      <div class="reveal-stage">
+        <figure class="reveal-frame" id="reveal-frame">
+          <img id="reveal-img" alt="揭晓的声纹海报" />
+          <span class="corner tl"></span><span class="corner tr"></span>
+          <span class="corner bl"></span><span class="corner br"></span>
+        </figure>
+        <div class="reveal-info">
+          <p class="reveal-eyebrow"><span class="brand-mark sm" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span> 声纹 SOUNDPRINT · 揭晓</p>
+          <h2 class="reveal-title" id="reveal-title"></h2>
+          <p class="reveal-meta"><b id="reveal-nickname"></b> · 编号 <b id="reveal-serial"></b></p>
+          <p class="reveal-hint">扫码海报右下角二维码，把这张海报带走</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="js/sync.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/wall.js"></script>
+</body>
+</html>
